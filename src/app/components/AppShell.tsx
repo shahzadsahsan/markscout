@@ -98,6 +98,11 @@ export function AppShell() {
           setShowWelcome(true);
         }
         stateRestoredRef.current = true;
+        // Re-fetch files for the restored view (initial fetch used default 'recents')
+        const restoredView = data.ui?.sidebarView || 'recents';
+        if (restoredView !== 'recents') {
+          fetchFiles(restoredView);
+        }
       })
       .catch(() => { stateRestoredRef.current = true; });
   }, []);
@@ -132,7 +137,8 @@ export function AppShell() {
 
       if (data.folders) {
         setFolders(data.folders);
-      } else if (data.files) {
+      }
+      if (data.files) {
         setFiles(data.files);
       }
 
