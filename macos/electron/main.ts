@@ -197,6 +197,25 @@ async function startNextServer(): Promise<number> {
   return port;
 }
 
+// Periodically check if the server is still alive; if not, restart it
+function startServerHealthCheck(): void {
+  setInterval(async () => {
+    if (!mainWindow || mainWindow.isDestroyed()) return;
+    const alive = await checkExistingServer(serverPort);
+    if (!alive && !nextProcess) {
+      console.log('Server died — restarting...');
+      usingExternalServer = false;
+      try {
+        const port = await startNextServer();
+        serverPort = port;
+        mainWindow?.loadURL(`http://127.0.0.1:${port}`);
+      } catch (err) {
+        console.error('Failed to restart server:', err);
+      }
+    }
+  }, 5000);
+}
+
 function stopNextServer(): Promise<void> {
   return new Promise((resolve) => {
     if (!nextProcess || usingExternalServer) {
@@ -392,6 +411,7 @@ app.on('ready', async () => {
     const port = await startNextServer();
     console.log(`Next.js ready on port ${port}`);
     createWindow(port);
+    startServerHealthCheck();
   } catch (err) {
     console.error('Failed to start:', err);
     // Show error dialog instead of silently dying
