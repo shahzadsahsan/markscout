@@ -1,0 +1,25 @@
+{
+  "name": "markreader-macos",
+  "version": "0.1.0",
+  "description": "MarkReader — local markdown file viewer for macOS",
+  "main": "dist-electron/main.js",
+  "private": true,
+  "scripts": {
+    "dev": "tsc -p tsconfig.json && electron .",
+    "dev:watch": "tsc -p tsconfig.json --watch & sleep 2 && electron .",
+    "build": "cd .. && npm run build && cd macos && tsc -p tsconfig.json",
+    "start": "electron .",
+    "package": "npm run build && electron-forge package",
+    "make": "npm run build && electron-forge make"
+  },
+  "devDependencies": {
+    "@electron-forge/cli": "^7.6.0",
+    "@electron-forge/maker-dmg": "^7.6.0",
+    "@electron-forge/maker-zip": "^7.6.0",
+    "@electron-forge/plugin-auto-unpack-natives": "^7.6.0",
+    "@electron-forge/shared-types": "^7.6.0",
+    "@types/node": "^22",
+    "electron": "^34.0.0",
+    "typescript": "^5"
+  }
+}

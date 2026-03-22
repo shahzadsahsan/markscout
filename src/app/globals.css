@@ -1,26 +1,598 @@
 @import "tailwindcss";
+@import "highlight.js/styles/github-dark.css";
 
+/* MarkReader Design Tokens */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --bg: #0d0d0d;
+  --bg-deep: #080808;
+  --surface: #161616;
+  --border: #2a2a2a;
+  --text: #e0e0e0;
+  --text-muted: #888888;
+  --accent: #d4a04a;
+  --accent-dim: #b8872e;
+  --code-bg: #111111;
+  --active-bg: #1e1e1e;
+  --hover-bg: #1a1a1a;
+  --sidebar-width: 280px;
+
+  /* Parchment Dusk — semantic prose coloring (bolder) */
+  --prose-h1: #f5e6c8;
+  --prose-h2: #e8d5a3;
+  --prose-h3: #d4a8a8;
+  --prose-h4: #9aad8b;
+  --prose-h5: #8a9daa;
+  --prose-bold: #f5edd8;
+  --prose-italic: #c8b5d8;
+  --prose-code: #6fc4af;
+  --prose-blockquote: #a89a88;
+  --prose-list-marker: #c89838;
+  --prose-th: #b89a6a;
+  --prose-del: #777;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-background: var(--bg);
+  --color-foreground: var(--text);
+  --color-surface: var(--surface);
+  --color-border: var(--border);
+  --color-accent: var(--accent);
+  --color-muted: var(--text-muted);
+  --font-mono: var(--font-jetbrains-mono);
+  --font-serif: var(--font-source-serif-4);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* Base */
+html {
+  background: var(--bg);
+  color-scheme: dark;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: radial-gradient(ellipse at 50% 0%, var(--bg) 0%, var(--bg-deep) 100%);
+  color: var(--text);
+  font-family: var(--font-source-serif-4), Georgia, 'Times New Roman', serif;
+  min-height: 100vh;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+}
+
+/* Sidebar scrollbar — thinner */
+.sidebar-scroll::-webkit-scrollbar {
+  width: 4px;
+}
+
+/* ===== Markdown Prose Styles ===== */
+.prose-reader {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem 4rem;
+  font-size: 18px;
+  line-height: 1.7;
+  color: var(--text);
+}
+
+/* Headings — JetBrains Mono */
+.prose-reader h1,
+.prose-reader h2,
+.prose-reader h3,
+.prose-reader h4,
+.prose-reader h5,
+.prose-reader h6 {
+  font-family: var(--font-jetbrains-mono), 'Courier New', monospace;
+  font-weight: 600;
+  color: var(--text);
+  margin-top: 2rem;
+  margin-bottom: 0.75rem;
+  line-height: 1.3;
+}
+
+.prose-reader h1 {
+  font-size: 28px;
+  margin-top: 0;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid var(--accent);
+  color: var(--prose-h1);
+}
+
+.prose-reader h2 {
+  font-size: 22px;
+  padding-bottom: 0.4rem;
+  border-bottom: 1px solid var(--border);
+  color: var(--prose-h2);
+}
+
+.prose-reader h3 {
+  font-size: 18px;
+  color: var(--prose-h3);
+}
+
+.prose-reader h4 {
+  font-size: 16px;
+  color: var(--prose-h4);
+}
+
+.prose-reader h5,
+.prose-reader h6 {
+  color: var(--prose-h5);
+}
+
+/* Paragraphs */
+.prose-reader p {
+  margin-bottom: 1.2rem;
+}
+
+/* Links — amber on hover */
+.prose-reader a {
+  color: var(--accent);
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition: border-color 0.15s;
+}
+.prose-reader a:hover {
+  border-bottom-color: var(--accent);
+}
+
+/* Bold / Italic */
+.prose-reader strong {
+  font-weight: 700;
+  color: var(--prose-bold);
+}
+.prose-reader em {
+  font-style: italic;
+  color: var(--prose-italic);
+}
+.prose-reader del {
+  color: var(--prose-del);
+}
+
+/* Code — inline */
+.prose-reader code {
+  font-family: var(--font-jetbrains-mono), 'Courier New', monospace;
+  font-size: 14px;
+  background: var(--code-bg);
+  padding: 0.15em 0.4em;
+  border-radius: 4px;
+  color: var(--prose-code);
+}
+
+/* Navigable .md file references — clickable code spans */
+.prose-reader code[data-navigable] {
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-color: rgba(95, 179, 161, 0.4);
+  text-underline-offset: 2px;
+}
+.prose-reader code[data-navigable]:hover {
+  text-decoration-color: var(--prose-code);
+  background: rgba(95, 179, 161, 0.15);
+}
+
+/* Code — blocks */
+.prose-reader pre {
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 1rem 1.25rem;
+  margin: 1.5rem 0;
+  overflow-x: auto;
+  font-size: 14px;
+  line-height: 1.5;
+}
+.prose-reader pre code {
+  background: none;
+  padding: 0;
+  color: var(--text);
+  font-size: inherit;
+}
+
+/* Blockquotes — amber left border */
+.prose-reader blockquote {
+  border-left: 3px solid var(--accent);
+  background: var(--hover-bg);
+  margin: 1.5rem 0;
+  padding: 0.75rem 1.25rem;
+  border-radius: 0 6px 6px 0;
+  color: var(--prose-blockquote);
+}
+.prose-reader blockquote p:last-child {
+  margin-bottom: 0;
+}
+
+/* Lists */
+.prose-reader ul,
+.prose-reader ol {
+  margin: 1rem 0;
+  padding-left: 1.5rem;
+}
+.prose-reader li {
+  margin-bottom: 0.4rem;
+}
+.prose-reader li::marker {
+  color: var(--prose-list-marker);
+}
+.prose-reader ul {
+  list-style-type: disc;
+}
+.prose-reader ol {
+  list-style-type: decimal;
+}
+
+/* Task lists */
+.prose-reader ul.contains-task-list {
+  list-style: none;
+  padding-left: 0;
+}
+.prose-reader .task-list-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+.prose-reader .task-list-item input[type="checkbox"] {
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--border);
+  border-radius: 3px;
+  margin-top: 0.3rem;
+  flex-shrink: 0;
+  cursor: default;
+}
+.prose-reader .task-list-item input[type="checkbox"]:checked {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+.prose-reader .task-list-item input[type="checkbox"]:checked + span {
+  color: var(--text-muted);
+  text-decoration: line-through;
+}
+
+/* Tables — zebra-striped */
+.prose-reader table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1.5rem 0;
+  font-size: 15px;
+}
+.prose-reader th {
+  font-family: var(--font-jetbrains-mono), monospace;
+  font-size: 13px;
+  font-weight: 600;
+  text-align: left;
+  padding: 0.6rem 0.75rem;
+  border-bottom: 2px solid var(--border);
+  color: var(--prose-th);
+  position: sticky;
+  top: 0;
+  background: var(--surface);
+}
+.prose-reader td {
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid var(--border);
+}
+.prose-reader tr:nth-child(even) td {
+  background: var(--surface);
+}
+.prose-reader tr:nth-child(odd) td {
+  background: var(--hover-bg);
+}
+
+/* Horizontal rule — amber gradient */
+.prose-reader hr {
+  border: none;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--accent), transparent);
+  margin: 2.5rem 0;
+}
+
+/* Images */
+.prose-reader img {
+  max-width: 100%;
+  border-radius: 8px;
+  margin: 1.5rem 0;
+}
+
+/* Filter pills */
+.filter-pill {
+  font-family: var(--font-jetbrains-mono), monospace;
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.12s;
+  white-space: nowrap;
+}
+.filter-pill:hover {
+  border-color: var(--text-muted);
+  color: var(--text);
+}
+.filter-pill.active {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--bg);
+  font-weight: 600;
+}
+
+/* Context menu */
+.context-menu {
+  position: fixed;
+  z-index: 50;
+  min-width: 160px;
+  border-radius: 8px;
+  padding: 4px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+}
+.context-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 6px 10px;
+  border-radius: 4px;
+  border: none;
+  background: none;
+  color: var(--text);
+  font-size: 12px;
+  font-family: var(--font-jetbrains-mono), monospace;
+  cursor: pointer;
+  text-align: left;
+}
+.context-menu-item:hover {
+  background: var(--hover-bg);
+}
+.context-menu-item.destructive {
+  color: #f87171;
+}
+
+/* Excluded folder */
+.folder-excluded {
+  opacity: 0.35;
+}
+
+/* ===== Sidebar Tab Bar ===== */
+.tab-btn {
+  padding: 0.5rem;
+  border-radius: 6px;
+  color: var(--text-muted);
+  transition: all 0.15s;
+  cursor: pointer;
+  border: none;
+  background: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.tab-btn:hover {
+  color: var(--text);
+  background: var(--hover-bg);
+}
+.tab-btn.active {
+  color: var(--accent);
+  background: var(--active-bg);
+}
+
+/* File item in sidebar */
+.file-item {
+  padding: 0.5rem 0.75rem;
+  border-left: 2px solid transparent;
+  cursor: pointer;
+  transition: all 0.1s;
+}
+.file-item:hover {
+  background: var(--hover-bg);
+}
+.file-item.active {
+  background: var(--active-bg);
+  border-left-color: var(--accent);
+}
+
+/* Star button */
+.star-btn {
+  color: var(--text-muted);
+  transition: color 0.15s;
+  cursor: pointer;
+  background: none;
+  border: none;
+  padding: 2px;
+  line-height: 1;
+}
+.star-btn:hover {
+  color: var(--accent);
+}
+.star-btn.starred {
+  color: var(--accent);
+}
+
+/* Skeleton loading */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.skeleton {
+  background: linear-gradient(90deg, var(--surface) 25%, var(--hover-bg) 50%, var(--surface) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 4px;
+}
+
+/* ===== Ambient Glow (pseudo-element so it doesn't override palette bg) ===== */
+@keyframes ambient-pulse {
+  0%, 100% { background: radial-gradient(ellipse at 50% 30%, rgba(212, 160, 74, 0.03) 0%, transparent 70%); }
+  50% { background: radial-gradient(ellipse at 50% 70%, rgba(95, 179, 161, 0.02) 0%, transparent 70%); }
+}
+.content-area {
+  position: relative;
+}
+.content-area::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  animation: ambient-pulse 30s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ===== Page Transitions ===== */
+.prose-transition-exit {
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+.prose-transition-enter {
+  opacity: 0;
+  transform: translateY(-8px);
+}
+.prose-transition-enter-active {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+/* ===== Text Magnification ===== */
+.prose-reader {
+  --zoom: 1;
+  transition: font-size 0.2s ease, max-width 0.3s ease;
+}
+.prose-reader.fill-screen {
+  max-width: min(90vw, 1600px) !important;
+}
+
+/* Zoom controls */
+.zoom-controls {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+.zoom-btn {
+  font-family: var(--font-jetbrains-mono), monospace;
+  font-size: 11px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.12s;
+  line-height: 1.2;
+}
+.zoom-btn:hover {
+  border-color: var(--text-muted);
+  color: var(--text);
+}
+.zoom-label {
+  font-family: var(--font-jetbrains-mono), monospace;
+  font-size: 10px;
+  color: var(--text-muted);
+  padding: 2px 4px;
+  min-width: 32px;
+  text-align: center;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: color 0.12s;
+}
+.zoom-label:hover {
+  color: var(--text);
+}
+
+/* ===== Reader Mode ===== */
+.reader-mode .sidebar-wrapper {
+  width: 0 !important;
+  min-width: 0 !important;
+  opacity: 0;
+  overflow: hidden;
+  pointer-events: none;
+  transition: width 0.25s ease, opacity 0.2s ease, min-width 0.25s ease;
+}
+.reader-mode .status-bar {
+  opacity: 0;
+  height: 0;
+  overflow: hidden;
+  transition: opacity 0.15s ease, height 0.15s ease 0.05s;
+}
+.reader-mode .file-header {
+  opacity: 0;
+  transform: translateY(-100%);
+  transition: opacity 0.3s ease 0.1s, transform 0.3s ease 0.1s;
+}
+.reader-mode .file-header:hover {
+  opacity: 0.4;
+  transform: translateY(0);
+}
+
+/* Vignette spotlight */
+.reader-mode .content-area::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(ellipse at 50% 40%, transparent 40%, rgba(0, 0, 0, 0.3) 100%);
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Reader mode typography */
+.reader-mode .prose-reader {
+  line-height: 1.85;
+  color: #e8e0d4;
+  font-feature-settings: 'kern' 1, 'liga' 1, 'onum' 1;
+  hanging-punctuation: first last;
+  hyphens: auto;
+}
+.reader-mode .prose-reader p {
+  margin-bottom: 1.5rem;
+}
+.reader-mode .prose-reader h1 + p::first-line,
+.reader-mode .prose-reader h2 + p::first-line {
+  font-variant: small-caps;
+  letter-spacing: 0.05em;
+  font-size: 1.05em;
+}
+
+/* Reading progress bar — REMOVED (distracting) */
+
+/* Reader mode exit hint */
+.reader-exit-hint {
+  position: fixed;
+  top: 12px;
+  right: 16px;
+  z-index: 50;
+  font-family: var(--font-jetbrains-mono), monospace;
+  font-size: 11px;
+  color: var(--text-muted);
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  cursor: pointer;
+}
+.reader-exit-hint.visible {
+  opacity: 0.6;
+}
+.reader-exit-hint:hover {
+  opacity: 1;
+}
+
+/* Sidebar transition (non-reader mode needs base transition) */
+.sidebar-wrapper {
+  transition: width 0.25s ease, opacity 0.2s ease, min-width 0.25s ease;
 }
