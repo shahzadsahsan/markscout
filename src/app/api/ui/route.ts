@@ -6,6 +6,7 @@ import {
   getUIState,
   getFavoriteFolders,
   getExcludedPaths,
+  getWatchDirs,
   saveSidebarView,
   saveSidebarCollapsed,
   saveLastSelectedPath,
@@ -18,12 +19,13 @@ import {
 import type { SidebarView } from '@/lib/types';
 
 export async function GET() {
-  const [ui, favoriteFolders, excludedPaths] = await Promise.all([
+  const [ui, favoriteFolders, excludedPaths, customWatchDirs] = await Promise.all([
     getUIState(),
     getFavoriteFolders(),
     getExcludedPaths(),
+    getWatchDirs(),
   ]);
-  return NextResponse.json({ ui, favoriteFolders, excludedPaths });
+  return NextResponse.json({ ui, favoriteFolders, excludedPaths, customWatchDirs });
 }
 
 export async function POST(request: NextRequest) {

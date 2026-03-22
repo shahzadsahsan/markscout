@@ -17,6 +17,8 @@ interface FoldersViewProps {
   excludedPaths: Set<string>;
   onExcludeFolder: (folderPath: string) => void;
   onIncludeFolder: (folderPath: string) => void;
+  customWatchDirs?: string[];
+  onRemoveWatchDir?: (dir: string) => void;
 }
 
 interface ContextMenuState {
@@ -39,6 +41,8 @@ function FolderGroup({
   onToggleExpand,
   excludedPaths,
   onContextMenu,
+  isCustomWatchDir,
+  onRemoveWatchDir,
 }: {
   node: FolderNode;
   depth: number;
@@ -52,6 +56,8 @@ function FolderGroup({
   onToggleExpand: (folderPath: string) => void;
   excludedPaths: Set<string>;
   onContextMenu: (e: React.MouseEvent, folderPath: string, isExcluded: boolean) => void;
+  isCustomWatchDir?: boolean;
+  onRemoveWatchDir?: (dir: string) => void;
 }) {
   const isExpanded = expandedGroups.has(node.path);
   const isFolderStarred = favoriteFolders.has(node.path);
@@ -104,6 +110,19 @@ function FolderGroup({
         >
           {isFolderStarred ? '★' : '☆'}
         </button>
+        {isCustomWatchDir && onRemoveWatchDir && (
+          <button
+            className="text-[10px] opacity-0 group-hover:opacity-100 px-1.5 py-0.5 rounded hover:bg-[var(--border)] transition-opacity"
+            style={{ color: '#f87171' }}
+            onClick={(e) => {
+              e.stopPropagation();
+              onRemoveWatchDir(node.path);
+            }}
+            title="Stop watching this folder"
+          >
+            ✕ Remove
+          </button>
+        )}
         <span
           className="text-[10px] shrink-0"
           style={{ color: 'var(--text-muted)' }}
@@ -160,6 +179,8 @@ export function FoldersView({
   excludedPaths,
   onExcludeFolder,
   onIncludeFolder,
+  customWatchDirs = [],
+  onRemoveWatchDir,
 }: FoldersViewProps) {
   const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -217,6 +238,8 @@ export function FoldersView({
           onToggleExpand={onToggleExpand}
           excludedPaths={excludedPaths}
           onContextMenu={handleContextMenu}
+          isCustomWatchDir={customWatchDirs.includes(folder.path)}
+          onRemoveWatchDir={onRemoveWatchDir}
         />
       ))}
 

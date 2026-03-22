@@ -42,7 +42,7 @@ export function StatusBar({
           title="Preferences"
           style={{ fontSize: '12px' }}
         >
-          ⚙
+          ⚙ Settings
         </button>
       </div>
     </footer>

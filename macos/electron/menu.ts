@@ -28,6 +28,15 @@ export function buildMenu(): Menu {
       label: 'File',
       submenu: [
         {
+          label: 'Add Folder...',
+          accelerator: 'CmdOrCtrl+Shift+O',
+          click: () => {
+            const win = BrowserWindow.getFocusedWindow();
+            if (win) win.webContents.send('trigger-add-folder');
+          },
+        },
+        { type: 'separator' },
+        {
           label: 'Reveal State File in Finder',
           click: () => shell.showItemInFolder(STATE_FILE),
         },

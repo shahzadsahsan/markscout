@@ -462,9 +462,9 @@ export function MarkdownPreview({
                 className="zoom-btn shrink-0"
                 onClick={revealInFinder}
                 title="Reveal in Finder"
-                style={{ fontSize: '10px', padding: '1px 5px' }}
+                style={{ fontSize: '10px', padding: '1px 5px', display: 'flex', alignItems: 'center', gap: 3 }}
               >
-                ⬡
+                <span>⬡</span><span>Finder</span>
               </button>
             </div>
             <div className="flex items-center gap-3 text-xs" style={{ color: 'var(--text-muted)' }}>
@@ -489,9 +489,9 @@ export function MarkdownPreview({
               className="zoom-btn"
               onClick={onToggleFillScreen}
               title="Fill screen (Cmd+Shift+F)"
-              style={fillScreen ? { borderColor: 'var(--accent)', color: 'var(--accent)' } : {}}
+              style={{ display: 'flex', alignItems: 'center', gap: 3, ...(fillScreen ? { borderColor: 'var(--accent)', color: 'var(--accent)' } : {}) }}
             >
-              ⛶
+              <span>⛶</span><span>Fill</span>
             </button>
 
             {/* Reader mode toggle */}
@@ -499,9 +499,9 @@ export function MarkdownPreview({
               className="zoom-btn"
               onClick={onToggleReaderMode}
               title="Reader mode (Cmd+.)"
-              style={readerMode ? { borderColor: 'var(--accent)', color: 'var(--accent)' } : {}}
+              style={{ display: 'flex', alignItems: 'center', gap: 3, ...(readerMode ? { borderColor: 'var(--accent)', color: 'var(--accent)' } : {}) }}
             >
-              ◉
+              <span>◉</span><span>Focus</span>
             </button>
 
             {/* Palette picker */}
@@ -510,9 +510,9 @@ export function MarkdownPreview({
               className="zoom-btn"
               onClick={() => setShowPalettePicker(p => !p)}
               title="Color palette"
-              style={showPalettePicker ? { borderColor: 'var(--accent)', color: 'var(--accent)' } : {}}
+              style={{ display: 'flex', alignItems: 'center', gap: 3, ...(showPalettePicker ? { borderColor: 'var(--accent)', color: 'var(--accent)' } : {}) }}
             >
-              ◔
+              <span>◔</span><span>Theme</span>
             </button>
 
             <button

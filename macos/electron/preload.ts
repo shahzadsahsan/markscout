@@ -10,4 +10,11 @@ contextBridge.exposeInMainWorld('electron', {
   revealInFinder: (filePath: string) => ipcRenderer.invoke('reveal-in-finder', filePath),
   openFolder: (folderPath: string) => ipcRenderer.invoke('open-folder', folderPath),
   selectFolder: () => ipcRenderer.invoke('dialog:selectFolder'),
+
+  // Menu-triggered events
+  onTriggerAddFolder: (callback: () => void) => {
+    const handler = () => callback();
+    ipcRenderer.on('trigger-add-folder', handler);
+    return () => { ipcRenderer.removeListener('trigger-add-folder', handler); };
+  },
 });

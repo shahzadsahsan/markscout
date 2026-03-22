@@ -30,6 +30,8 @@ interface SidebarProps {
   searchQuery: string;
   onSearchChange: (query: string) => void;
   searchInputRef: RefObject<HTMLInputElement | null>;
+  customWatchDirs?: string[];
+  onRemoveWatchDir?: (dir: string) => void;
 }
 
 const TABS: { view: SidebarView; icon: string; label: string; shortcut: string }[] = [
@@ -74,6 +76,8 @@ export function Sidebar({
   searchQuery,
   onSearchChange,
   searchInputRef,
+  customWatchDirs,
+  onRemoveWatchDir,
 }: SidebarProps) {
   return (
     <aside
@@ -107,11 +111,13 @@ export function Sidebar({
             {TABS.map(tab => (
               <button
                 key={tab.view}
-                className={`tab-btn text-sm flex-1 ${view === tab.view ? 'active' : ''}`}
+                className={`tab-btn text-xs flex-1 ${view === tab.view ? 'active' : ''}`}
                 onClick={() => onChangeView(tab.view)}
                 title={`${tab.label} (${tab.shortcut})`}
+                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}
               >
-                {tab.icon}
+                <span>{tab.icon}</span>
+                <span>{tab.label}</span>
               </button>
             ))}
           </>
@@ -169,6 +175,8 @@ export function Sidebar({
                   excludedPaths={excludedPaths}
                   onExcludeFolder={onExcludeFolder}
                   onIncludeFolder={onIncludeFolder}
+                  customWatchDirs={customWatchDirs}
+                  onRemoveWatchDir={onRemoveWatchDir}
                 />
               )}
               {view === 'favorites' && (

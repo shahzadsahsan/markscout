@@ -49,6 +49,13 @@ export function AppShell() {
   // Preferences panel
   const [prefsOpen, setPrefsOpen] = useState(false);
 
+  // Custom watch dirs (for folder removal in FoldersView)
+  const [customWatchDirs, setCustomWatchDirs] = useState<string[]>([]);
+
+  // First-run welcome screen
+  const [showWelcome, setShowWelcome] = useState(false);
+  const welcomeDismissedRef = useRef(false);
+
   // Zoom & reader mode
   const ZOOM_STEPS = [0.85, 1, 1.25, 1.5, 2];
   const [zoomLevel, setZoomLevel] = useState(1);
@@ -80,6 +87,9 @@ export function AppShell() {
         }
         if (data.excludedPaths) {
           setExcludedPaths(new Set(data.excludedPaths));
+        }
+        if (data.customWatchDirs) {
+          setCustomWatchDirs(data.customWatchDirs);
         }
         stateRestoredRef.current = true;
       })
@@ -297,6 +307,34 @@ export function AppShell() {
   }, [fetchFiles]);
 
   // --- Toggle sidebar collapse (persisted) ---
+  // --- Remove a custom watch directory ---
+  const removeWatchDir = useCallback(async (dir: string) => {
+    try {
+      await fetch('/api/preferences', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ removeWatchDir: dir }),
+      });
+      setCustomWatchDirs(prev => prev.filter(d => d !== dir));
+      // Remove files from that directory
+      setFiles(prev => prev.filter(f => !f.path.startsWith(dir)));
+      fetchFiles();
+    } catch { /* ignore */ }
+  }, [fetchFiles]);
+
+  // --- Add a custom watch directory ---
+  const addWatchDir = useCallback(async (dir: string) => {
+    try {
+      await fetch('/api/preferences', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ addWatchDir: dir }),
+      });
+      setCustomWatchDirs(prev => [...prev, dir]);
+      fetchFiles();
+    } catch { /* ignore */ }
+  }, [fetchFiles]);
+
   const toggleCollapse = useCallback(() => {
     setSidebarCollapsed(prev => {
       const next = !prev;
@@ -565,6 +603,98 @@ export function AppShell() {
     return () => document.removeEventListener('keydown', handleKey);
   }, [changeView, toggleStar, selectFile, selectedPath, filteredFiles, zoomIn, zoomOut, zoomReset, toggleFillScreen, toggleReaderMode, readerMode]);
 
+  // --- Show welcome screen on first run (no files found after scan) ---
+  useEffect(() => {
+    if (scanComplete && files.length === 0 && !welcomeDismissedRef.current) {
+      setShowWelcome(true);
+    }
+  }, [scanComplete, files.length]);
+
+  // --- Trigger native folder picker (shared by welcome + menu) ---
+  const triggerAddFolder = useCallback(async () => {
+    const electron = (window as unknown as { electron?: { selectFolder: () => Promise<string | null> } }).electron;
+    if (electron?.selectFolder) {
+      const dir = await electron.selectFolder();
+      if (dir) {
+        await addWatchDir(dir);
+        setShowWelcome(false);
+        welcomeDismissedRef.current = true;
+      }
+    }
+  }, [addWatchDir]);
+
+  // --- Listen for Electron menu "Add Folder" command ---
+  useEffect(() => {
+    const electron = (window as unknown as { electron?: { onTriggerAddFolder?: (cb: () => void) => () => void } }).electron;
+    if (electron?.onTriggerAddFolder) {
+      return electron.onTriggerAddFolder(triggerAddFolder);
+    }
+  }, [triggerAddFolder]);
+
+  // --- Welcome Screen Component ---
+  if (showWelcome) {
+    return (
+      <div
+        className="flex flex-col items-center justify-center h-screen gap-6"
+        style={{ background: 'var(--bg)', color: 'var(--text)' }}
+      >
+        <div className="text-center">
+          <h1
+            className="text-3xl font-bold mb-2"
+            style={{ fontFamily: 'var(--font-jetbrains-mono), monospace', color: '#d4a04a' }}
+          >
+            MarkReader
+          </h1>
+          <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
+            A local markdown file viewer
+          </p>
+        </div>
+
+        <div className="flex flex-col items-center gap-3">
+          <button
+            className="px-6 py-3 rounded-lg text-sm font-medium transition-colors"
+            style={{
+              background: '#d4a04a',
+              color: '#0d0d0d',
+              fontFamily: 'var(--font-jetbrains-mono), monospace',
+              border: 'none',
+              cursor: 'pointer',
+            }}
+            onClick={triggerAddFolder}
+            onMouseEnter={e => (e.currentTarget.style.background = '#e0b060')}
+            onMouseLeave={e => (e.currentTarget.style.background = '#d4a04a')}
+          >
+            Add Folder
+          </button>
+
+          <p className="text-xs" style={{ color: 'var(--text-muted)', maxWidth: 300, textAlign: 'center' }}>
+            Choose a folder containing markdown files to start reading.
+          </p>
+        </div>
+
+        <button
+          className="text-xs mt-4 transition-colors"
+          style={{
+            color: 'var(--text-muted)',
+            background: 'none',
+            border: 'none',
+            cursor: 'pointer',
+            textDecoration: 'underline',
+            textUnderlineOffset: 3,
+          }}
+          onClick={() => {
+            setShowWelcome(false);
+            welcomeDismissedRef.current = true;
+          }}
+          onMouseEnter={e => (e.currentTarget.style.color = 'var(--text)')}
+          onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-muted)')}
+        >
+          Skip — use defaults
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div className={`flex flex-col h-screen overflow-hidden ${readerMode ? 'reader-mode' : ''}`} style={{ background: 'var(--bg)' }}>
       <div className="flex flex-1 overflow-hidden">
@@ -591,6 +721,8 @@ export function AppShell() {
             searchQuery={searchQuery}
             onSearchChange={setSearchQuery}
             searchInputRef={searchInputRef}
+            customWatchDirs={customWatchDirs}
+            onRemoveWatchDir={removeWatchDir}
           />
         </div>
 
