@@ -10,13 +10,13 @@ const config: ForgeConfig = {
     appBundleId: 'com.markreader.app',
     icon: './resources/icon',
     asar: true,
-    // Include the parent Next.js app in the package
+    // Use the lean staging directory (created by scripts/prepare-resources.sh)
     extraResource: [
-      '../.next',
-      '../public',
-      '../next.config.ts',
-      '../package.json',
-      '../node_modules',
+      '.staging/.next',
+      '.staging/public',
+      '.staging/next.config.ts',
+      '.staging/package.json',
+      '.staging/node_modules',
     ],
     // No signing for personal use
     osxSign: undefined,
@@ -24,8 +24,9 @@ const config: ForgeConfig = {
     // Ignore dev-only files
     ignore: [
       /^\/\.git/,
-      /^\/\.next\/cache/,
-      /^\/src/,  // Source not needed in production (built into .next)
+      /^\/src/,
+      /^\/\.staging/,    // Don't double-bundle staging dir into asar
+      /^\/scripts/,
     ],
   },
   makers: [

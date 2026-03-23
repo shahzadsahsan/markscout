@@ -2,3 +2,4 @@ node_modules/
 dist-electron/
 out/
 *.js.map
+.staging

@@ -9,8 +9,9 @@
     "dev:watch": "tsc -p tsconfig.json --watch & sleep 2 && electron .",
     "build": "cd .. && npm run build && cd macos && tsc -p tsconfig.json",
     "start": "electron .",
-    "package": "npm run build && electron-forge package",
-    "make": "npm run build && electron-forge make"
+    "prepare-resources": "bash scripts/prepare-resources.sh",
+    "package": "npm run build && npm run prepare-resources && electron-forge package",
+    "make": "npm run build && npm run prepare-resources && electron-forge make"
   },
   "devDependencies": {
     "@electron-forge/cli": "^7.6.0",
