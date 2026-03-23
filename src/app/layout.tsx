@@ -15,7 +15,7 @@ const sourceSerif4 = Source_Serif_4({
 });
 
 export const metadata: Metadata = {
-  title: "MarkReader",
+  title: "MarkScout",
   description: "Local markdown file viewer",
 };
 

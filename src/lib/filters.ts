@@ -1,4 +1,4 @@
-// MarkReader — Smart File Filtering
+// MarkScout — Smart File Filtering
 // Two levels: chokidar ignored paths (never scanned) + filename regex (post-discovery)
 
 import type { FilterConfig } from './types';

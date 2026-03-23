@@ -3,7 +3,7 @@ import * as path from 'path';
 import * as os from 'os';
 import * as fs from 'fs';
 
-const STATE_DIR = path.join(os.homedir(), '.markreader');
+const STATE_DIR = path.join(os.homedir(), '.markscout');
 const STATE_FILE = path.join(STATE_DIR, 'state.json');
 
 function getWatchedDirs(): string[] {

@@ -1,4 +1,4 @@
-// MarkReader — Chokidar File Watcher Singleton
+// MarkScout — Chokidar File Watcher Singleton
 // All shared state lives on globalThis to survive Next.js module isolation
 // between instrumentation.ts and API route contexts (mitigation #1).
 
@@ -30,7 +30,7 @@ const DEFAULT_WATCH_DIRS = getDefaultWatchDirs();
 const DEBOUNCE_MS = 100;
 
 // --- ALL shared state on globalThis ---
-interface MarkReaderGlobal {
+interface MarkScoutGlobal {
   __mrWatcher?: FSWatcher;
   __mrInitPromise?: Promise<void>;
   __mrRegistry: Map<string, FileEntry>;
@@ -44,7 +44,7 @@ interface MarkReaderGlobal {
   __mrMinFileLength: number;
 }
 
-const g = globalThis as unknown as MarkReaderGlobal;
+const g = globalThis as unknown as MarkScoutGlobal;
 
 // Initialize shared state containers (only if not already present)
 if (!g.__mrRegistry) g.__mrRegistry = new Map();
@@ -195,7 +195,7 @@ async function createWatcher(): Promise<FSWatcher> {
 
   watcher.on('change', (filePath: string) => handleFileEvent(filePath, 'change'));
   watcher.on('unlink', (filePath: string) => handleRemoveEvent(filePath));
-  watcher.on('error', (err: unknown) => console.error('[MarkReader] Watcher error:', err));
+  watcher.on('error', (err: unknown) => console.error('[MarkScout] Watcher error:', err));
 
   watcher.on('ready', async () => {
     g.__mrScanComplete = true;

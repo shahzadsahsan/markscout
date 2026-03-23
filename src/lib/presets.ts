@@ -1,4 +1,4 @@
-// MarkReader — Filter Presets
+// MarkScout — Filter Presets
 // Two categories: generic (any developer) and Claude Code-specific.
 
 import type { FilterPreset, FilterPresetId } from './types';

@@ -11,14 +11,14 @@ import { buildMenu } from './menu';
 
 const isDev = !app.isPackaged;
 
-// In dev: __dirname is macos/dist-electron/, so ../.. = markreader/
+// In dev: __dirname is macos/dist-electron/, so ../.. = markscout/
 // In production: forge.config.ts copies .next, node_modules, etc. into
 // the app bundle's Resources dir via extraResource, so process.resourcesPath
 // is the effective project root.
 const PROJECT_ROOT = isDev
   ? path.resolve(__dirname, '..', '..')
   : process.resourcesPath;
-const STATE_DIR = path.join(os.homedir(), '.markreader');
+const STATE_DIR = path.join(os.homedir(), '.markscout');
 const WINDOW_STATE_FILE = path.join(STATE_DIR, 'window-state.json');
 
 // ── Window State Persistence ───────────────────────────────────────────────────
@@ -350,7 +350,7 @@ const LOADING_HTML = `
 <body>
   <div class="loader">
     <div class="spinner"></div>
-    <div class="title">MarkReader</div>
+    <div class="title">MarkScout</div>
   </div>
 </body>
 </html>
@@ -457,7 +457,7 @@ app.on('ready', async () => {
     console.error('Failed to start:', err);
     // Show error dialog instead of silently dying
     dialog.showErrorBox(
-      'MarkReader failed to start',
+      'MarkScout failed to start',
       `Could not start the Next.js server.\n\nMake sure you've run "npm run build" in:\n${PROJECT_ROOT}\n\nError: ${err}`
     );
     app.quit();

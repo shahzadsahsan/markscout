@@ -1,4 +1,4 @@
-# MarkReader — Project Instructions
+# MarkScout — Project Instructions
 
 ## What This Is
 
@@ -17,7 +17,7 @@ A local-only Next.js web app for previewing markdown files. Watches `~/Vibe Codi
 - **chokidar** for file watching, initialized via `instrumentation.ts`
 - **markdown-it** for rendering (not react-markdown)
 - **SSE** for live updates (not WebSocket)
-- **State** persists to `~/.markreader/state.json` (v2 sync-ready schema)
+- **State** persists to `~/.markscout/state.json` (v2 sync-ready schema)
 - **Security**: all `/api/file` requests must validate path is under a watched directory
 - **Filtering**: exclude node_modules, build dirs, LICENSE/CHANGELOG, agent workflow files
 

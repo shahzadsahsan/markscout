@@ -1,4 +1,4 @@
-// MarkReader — Next.js Instrumentation Hook
+// MarkScout — Next.js Instrumentation Hook
 // Boots the chokidar file watcher on server start.
 
 export async function register() {

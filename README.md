@@ -1,12 +1,12 @@
-# MarkReader
+# MarkScout
 
 **Browse your markdown files beautifully.**
 
 ![macOS](https://img.shields.io/badge/platform-macOS-black) ![Next.js](https://img.shields.io/badge/Next.js-16-black) ![Electron](https://img.shields.io/badge/Electron-34-black) ![License](https://img.shields.io/badge/license-MIT-black)
 
-MarkReader watches your folders for markdown files and gives you a fast, distraction-free way to read them — no editing, no clutter, just clean rendering with syntax-colored headings, navigable file links, and instant live updates.
+MarkScout watches your folders for markdown files and gives you a fast, distraction-free way to read them — no editing, no clutter, just clean rendering with syntax-colored headings, navigable file links, and instant live updates.
 
-Built for developers who work with AI coding agents. If your workflow generates dozens of plans, specs, memory files, research notes, and architecture docs across nested project folders, MarkReader surfaces the ones that matter and hides the noise.
+Built for developers who work with AI coding agents. If your workflow generates dozens of plans, specs, memory files, research notes, and architecture docs across nested project folders, MarkScout surfaces the ones that matter and hides the noise.
 
 ## What It Does
 
@@ -95,7 +95,7 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for detailed implementation notes.
 
 ## Privacy
 
-MarkReader does not collect, transmit, or store any data outside your machine. No analytics, no accounts, no network calls. Your files stay on your disk.
+MarkScout does not collect, transmit, or store any data outside your machine. No analytics, no accounts, no network calls. Your files stay on your disk.
 
 ## License
 

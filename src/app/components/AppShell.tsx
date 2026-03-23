@@ -168,7 +168,7 @@ export function AppShell() {
     const cached = contentCacheRef.current.get(filePath);
     if (cached) {
       setFileContent(cached);
-      document.title = `${cached.name} — MarkReader`;
+      document.title = `${cached.name} — MarkScout`;
       // Still record history + persist selected path
       fetch('/api/history', {
         method: 'POST',
@@ -194,7 +194,7 @@ export function AppShell() {
       );
       const data: FileContentResponse = await res.json();
       setFileContent(data);
-      document.title = `${data.name} — MarkReader`;
+      document.title = `${data.name} — MarkScout`;
 
       // Store in LRU cache (cap at 20)
       contentCacheRef.current.set(filePath, data);
@@ -668,7 +668,7 @@ export function AppShell() {
             className="text-3xl font-bold mb-2"
             style={{ fontFamily: 'var(--font-jetbrains-mono), monospace', color: '#d4a04a' }}
           >
-            MarkReader
+            MarkScout
           </h1>
           <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
             A local markdown file viewer

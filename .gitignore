@@ -45,5 +45,5 @@ macos/node_modules/
 macos/dist-electron/
 macos/out/
 
-# markreader state
-.markreader/
+# markscout state
+.markscout/

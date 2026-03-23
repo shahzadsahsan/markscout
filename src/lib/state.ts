@@ -1,5 +1,5 @@
-// MarkReader — State Persistence
-// Reads/writes ~/.markreader/state.json with atomic writes and a write queue.
+// MarkScout — State Persistence
+// Reads/writes ~/.markscout/state.json with atomic writes and a write queue.
 
 import { readFile, writeFile, mkdir, rename, access } from 'fs/promises';
 import { randomUUID } from 'crypto';
@@ -8,7 +8,7 @@ import os from 'os';
 import type { AppState, FavoriteEntry, HistoryEntry, SidebarView, FileEntry, FilterPresetId, PreferencesState } from './types';
 import { DEFAULT_ACTIVE_PRESETS } from './presets';
 
-const STATE_DIR = path.join(os.homedir(), '.markreader');
+const STATE_DIR = path.join(os.homedir(), '.markscout');
 const STATE_FILE = path.join(STATE_DIR, 'state.json');
 const STATE_TMP = path.join(STATE_DIR, 'state.json.tmp');
 const HISTORY_LIMIT = 50;

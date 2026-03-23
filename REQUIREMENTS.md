@@ -1,4 +1,4 @@
-# MarkReader — Requirements & Specification
+# MarkScout — Requirements & Specification
 
 ## Problem
 
@@ -27,7 +27,7 @@ A local-only web app that watches directories for `.md` files, filters out code/
 | **Recents** (default) | All files sorted by last modified time | Most recent first |
 | **Folders** | Tree view: watched root → project → subdirectory | Alphabetical with file counts |
 | **Favorites** | Only starred files | Most recently starred first |
-| **History** | Files opened in MarkReader | Most recently opened first |
+| **History** | Files opened in MarkScout | Most recently opened first |
 
 #### Smart File Filtering
 

@@ -1,4 +1,4 @@
-// MarkReader — Core Types
+// MarkScout — Core Types
 
 export type SidebarView = 'recents' | 'folders' | 'favorites';
 

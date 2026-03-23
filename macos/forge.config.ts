@@ -5,9 +5,9 @@ import { AutoUnpackNativesPlugin } from '@electron-forge/plugin-auto-unpack-nati
 
 const config: ForgeConfig = {
   packagerConfig: {
-    name: 'MarkReader',
-    executableName: 'MarkReader',
-    appBundleId: 'com.markreader.app',
+    name: 'MarkScout',
+    executableName: 'MarkScout',
+    appBundleId: 'com.markscout.app',
     icon: './resources/icon',
     asar: true,
     // Use the lean staging directory (created by scripts/prepare-resources.sh)
@@ -32,7 +32,7 @@ const config: ForgeConfig = {
   makers: [
     new MakerZIP({}, ['darwin']),
     new MakerDMG({
-      name: 'MarkReader',
+      name: 'MarkScout',
     }, ['darwin']),
   ],
   plugins: [

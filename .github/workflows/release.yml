@@ -50,14 +50,14 @@ jobs:
       - name: Upload DMG
         uses: actions/upload-artifact@v4
         with:
-          name: MarkReader-macOS-${{ matrix.arch }}-dmg
+          name: MarkScout-macOS-${{ matrix.arch }}-dmg
           path: macos/out/make/**/*.dmg
           if-no-files-found: ignore
 
       - name: Upload ZIP
         uses: actions/upload-artifact@v4
         with:
-          name: MarkReader-macOS-${{ matrix.arch }}-zip
+          name: MarkScout-macOS-${{ matrix.arch }}-zip
           path: macos/out/make/**/*.zip
           if-no-files-found: ignore
 

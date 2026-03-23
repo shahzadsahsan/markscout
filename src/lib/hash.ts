@@ -1,4 +1,4 @@
-// MarkReader — Content Hash for Move Tracking
+// MarkScout — Content Hash for Move Tracking
 // Hash = SHA-256(first 1KB of content + file size)
 // This identifies files across renames/moves without reading the entire file.
 

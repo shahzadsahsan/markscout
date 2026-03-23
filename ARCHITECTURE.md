@@ -1,4 +1,4 @@
-# MarkReader — Architecture & Implementation Plan
+# MarkScout — Architecture & Implementation Plan
 
 ## Tech Stack
 
@@ -9,13 +9,13 @@
 | File watching | **chokidar** | Superior to native `fs.watch` — handles renames, recursive dirs, cross-platform |
 | Markdown rendering | **markdown-it** + plugins | Battle-tested (borrowed from md-fileserver), GFM, highlight.js, task lists |
 | Live updates | **SSE** (Server-Sent Events) | Simpler than WebSocket for one-way server→client updates |
-| State | **JSON file** (`~/.markreader/state.json`) | Sync-ready schema with timestamps, instanceId, atomic writes |
+| State | **JSON file** (`~/.markscout/state.json`) | Sync-ready schema with timestamps, instanceId, atomic writes |
 | Fonts | **JetBrains Mono** (sidebar/headings/code) + **Source Serif 4** (prose) via next/font | Distinctive, readable |
 
 ## File Structure
 
 ```
-markreader/
+markscout/
 ├── package.json
 ├── next.config.ts
 ├── tsconfig.json
@@ -25,7 +25,7 @@ markreader/
 │   │   ├── types.ts                      # FileEntry, AppState, SSEEvent, FilterConfig
 │   │   ├── hash.ts                       # Content hash (first 1KB + filesize → SHA-256)
 │   │   ├── filters.ts                    # Path/filename exclusion logic + defaults
-│   │   ├── state.ts                      # Read/write/merge ~/.markreader/state.json
+│   │   ├── state.ts                      # Read/write/merge ~/.markscout/state.json
 │   │   └── watcher.ts                    # Chokidar singleton, file registry, SSE broadcast
 │   └── app/
 │       ├── layout.tsx                    # Root layout, fonts, dark theme
@@ -131,7 +131,7 @@ User can add/remove patterns via `state.json.filters`.
 - `contentHash` — SHA-256 of first 1KB + size string
 
 **Watched directories**:
-- `~/Vibe Coding/` — project = first child dir (e.g., `markreader`)
+- `~/Vibe Coding/` — project = first child dir (e.g., `markscout`)
 - `~/.claude/` — project = first child dir (e.g., `memory`, `plans`)
 
 **Debouncing**: 100ms per file path.
@@ -196,7 +196,7 @@ interface AppState {
 
 ```
 ┌───────────────────────────────────────────────────────┐
-│                      MarkReader                        │
+│                      MarkScout                        │
 ├──────────────┬────────────────────────────────────────┤
 │              │                                        │
 │ [⏱][📁][⭐][📖] │  project / subdir / filename.md       │
@@ -251,8 +251,8 @@ Sidebar tabs: ⏱ Recents | 📁 Folders | ⭐ Favorites | 📖 History
 ### Step 1: Scaffold & install
 
 ```bash
-npx create-next-app@latest markreader --typescript --tailwind --app --src-dir --no-turbopack
-cd markreader
+npx create-next-app@latest markscout --typescript --tailwind --app --src-dir --no-turbopack
+cd markscout
 npm install chokidar markdown-it markdown-it-anchor highlight.js
 npm install -D @types/markdown-it
 ```
@@ -273,7 +273,7 @@ First 1KB + file size → SHA-256 hex.
 
 ### Step 5: State persistence (`src/lib/state.ts`)
 
-- Atomic read/write to `~/.markreader/state.json`
+- Atomic read/write to `~/.markscout/state.json`
 - Initialize with defaults on first run (v2, generated instanceId)
 - Move tracking on startup (validate paths, search by hash)
 - Favorites: `toggleFavorite(path, hash)`, `getFavorites()`

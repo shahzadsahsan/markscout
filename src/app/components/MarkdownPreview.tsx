@@ -476,7 +476,7 @@ export function MarkdownPreview({
       <div className="flex items-center justify-center h-full" style={{ color: 'var(--text-muted)' }}>
         <div className="text-center">
           <p className="text-lg mb-1" style={{ fontFamily: 'var(--font-jetbrains-mono), monospace' }}>
-            MarkReader
+            MarkScout
           </p>
           <p className="text-sm">Select a file to preview</p>
         </div>
