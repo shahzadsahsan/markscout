@@ -4,6 +4,9 @@
 
 ![macOS](https://img.shields.io/badge/platform-macOS-black) ![Next.js](https://img.shields.io/badge/Next.js-16-black) ![Electron](https://img.shields.io/badge/Electron-34-black) ![License](https://img.shields.io/badge/license-MIT-black)
 
+<img width="824" height="832" alt="Screenshot 2026-03-23 at 11 46 04 PM" src="https://github.com/user-attachments/assets/469278db-01ba-4a43-b9db-ffe0e9e2d679" />
+
+
 MarkScout watches your folders for markdown files and gives you a fast, distraction-free way to read them — no editing, no clutter, just clean rendering with syntax-colored headings, navigable file links, and instant live updates.
 
 Built for developers who work with AI coding agents. If your workflow generates dozens of plans, specs, memory files, research notes, and architecture docs across nested project folders, MarkScout surfaces the ones that matter and hides the noise.
