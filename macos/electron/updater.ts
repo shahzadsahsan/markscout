@@ -4,7 +4,7 @@
 import * as https from 'https';
 import * as os from 'os';
 
-const REPO = 'shahzadsahsan/markreader';
+const REPO = 'shahzadsahsan/markscout';
 const CURRENT_VERSION: string = require('../../package.json').version;
 
 export interface UpdateInfo {

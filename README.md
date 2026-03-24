@@ -33,7 +33,7 @@ Built for developers who work with AI coding agents. If your workflow generates 
 
 ## Download
 
-Grab the latest `.dmg` from [Releases](https://github.com/shahzadsahsan/markreader/releases).
+Grab the latest `.dmg` from [Releases](https://github.com/shahzadsahsan/markscout/releases).
 
 > The app is unsigned. Right-click → Open on first launch to bypass Gatekeeper.
 
