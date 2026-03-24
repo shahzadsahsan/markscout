@@ -72,6 +72,17 @@ export function PreferencesPanel({ open: isOpen, onClose, onPresetsChanged }: Pr
     onPresetsChanged();
   };
 
+  const handleHideAll = async (ids: FilterPresetId[]) => {
+    for (const id of ids) {
+      const preset = presets.find(p => p.id === id);
+      if (preset && !preset.active) {
+        const data = await api.togglePreset(id);
+        setPresets(prev => prev.map(p => p.id === id ? { ...p, active: data.active } : p));
+      }
+    }
+    onPresetsChanged();
+  };
+
   const handleRemoveDir = async (dir: string) => {
     await api.removeWatchDir(dir);
     setWatchDirs(prev => prev.filter(d => d !== dir));
@@ -107,9 +118,11 @@ export function PreferencesPanel({ open: isOpen, onClose, onPresetsChanged }: Pr
 
   const activeCount = presets.filter(p => p.active).length;
   const hiddenCount = presets.filter(p => p.active).reduce((sum, p) => sum + p.matchCount, 0);
-
-  // Build a unified list of all dirs (active + disabled)
   const allDirs = [...new Set([...watchDirs, ...Array.from(disabledDirs)])];
+
+  const genericPresets = presets.filter(p => !p.id.startsWith('claude-'));
+  const claudePresets = presets.filter(p => p.id.startsWith('claude-'));
+  const claudeUnhidden = claudePresets.filter(p => !p.active && p.matchCount > 0).length;
 
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center pt-16" style={{ background: 'rgba(0,0,0,0.6)' }}>
@@ -155,23 +168,10 @@ export function PreferencesPanel({ open: isOpen, onClose, onPresetsChanged }: Pr
                           cursor: 'pointer',
                         }}
                       >
-                        <span
-                          className="text-[10px] font-medium"
-                          style={{
-                            fontFamily: 'var(--font-ui)',
-                            color: isActive ? 'var(--accent)' : 'var(--text)',
-                          }}
-                        >
+                        <span className="text-[10px] font-medium" style={{ fontFamily: 'var(--font-ui)', color: isActive ? 'var(--accent)' : 'var(--text)' }}>
                           {tp.label}
                         </span>
-                        <span
-                          className="text-[9px] leading-tight"
-                          style={{
-                            fontFamily: tp.vars['--font-body'],
-                            color: 'var(--text-muted)',
-                            letterSpacing: tp.vars['--prose-letter-spacing'] || 'normal',
-                          }}
-                        >
+                        <span className="text-[9px] leading-tight" style={{ fontFamily: tp.vars['--font-body'], color: 'var(--text-muted)' }}>
                           The quick brown fox
                         </span>
                       </button>
@@ -180,18 +180,18 @@ export function PreferencesPanel({ open: isOpen, onClose, onPresetsChanged }: Pr
                 </div>
               </div>
 
-              {/* Hidden file filters */}
+              {/* Noise filters — redesigned */}
               <div className="px-5 py-4">
-                <div className="flex items-baseline justify-between mb-2">
+                <div className="flex items-baseline justify-between mb-1">
                   <h3 className="text-xs font-medium uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>
-                    Hide from sidebar
+                    Noise Filter
                   </h3>
                   <span className="text-[10px]" style={{ color: 'var(--text-muted)' }}>
-                    {activeCount} active {'\u00B7'} {hiddenCount} files hidden
+                    {hiddenCount} files hidden
                   </span>
                 </div>
                 <p className="text-[10px] mb-3" style={{ color: 'var(--text-muted)' }}>
-                  Checked items are hidden from the file list.
+                  Toggle the eye to hide file types from the sidebar. Hidden files are filtered out, not deleted.
                 </p>
 
                 {/* Min file length */}
@@ -214,76 +214,93 @@ export function PreferencesPanel({ open: isOpen, onClose, onPresetsChanged }: Pr
                       setMinFileLength(val);
                       if (minFileLengthTimer.current) clearTimeout(minFileLengthTimer.current);
                       minFileLengthTimer.current = setTimeout(() => {
-                        api.setMinFileLength(val)
-                          .then(() => onPresetsChanged()).catch(() => {});
+                        api.setMinFileLength(val).then(() => onPresetsChanged()).catch(() => {});
                       }, 300);
                     }}
                     className="w-full" style={{ accentColor: 'var(--accent)', height: 4 }}
                   />
                 </div>
 
-                {/* Presets */}
-                {(() => {
-                  const genericPresets = presets.filter(p => !p.id.startsWith('claude-'));
-                  const claudePresets = presets.filter(p => p.id.startsWith('claude-'));
-
-                  const renderPreset = (preset: PresetInfo) => (
-                    <button
-                      key={preset.id}
-                      className="flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors"
-                      style={{
-                        background: preset.active ? 'var(--active-bg)' : 'transparent',
-                        border: `1px solid ${preset.active ? 'var(--accent)' : 'var(--border)'}`,
-                        opacity: preset.matchCount === 0 && !preset.active ? 0.45 : 1,
-                      }}
-                      onClick={() => handleTogglePreset(preset.id)}
-                    >
-                      <span
-                        className="w-4 h-4 rounded flex items-center justify-center text-[10px] shrink-0"
-                        style={{
-                          background: preset.active ? 'var(--accent)' : 'transparent',
-                          border: `1.5px solid ${preset.active ? 'var(--accent)' : 'var(--border)'}`,
-                          color: preset.active ? 'var(--bg)' : 'transparent',
-                        }}
-                      >
-                        {'\u2713'}
-                      </span>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs font-medium" style={{ fontFamily: 'var(--font-ui)', color: 'var(--text)' }}>
+                {/* General presets — compact row */}
+                {genericPresets.length > 0 && (
+                  <div className="mb-3">
+                    <p className="text-[10px] uppercase tracking-wider mb-1.5" style={{ color: 'var(--text-muted)' }}>General</p>
+                    <div className="flex flex-col gap-1">
+                      {genericPresets.map(preset => (
+                        <button
+                          key={preset.id}
+                          className="flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-left transition-all"
+                          style={{
+                            background: 'transparent',
+                            border: '1px solid var(--border)',
+                            opacity: preset.matchCount === 0 && !preset.active ? 0.35 : 1,
+                          }}
+                          onClick={() => handleTogglePreset(preset.id)}
+                        >
+                          {/* Eye icon — visible or hidden */}
+                          <span className="text-sm shrink-0" style={{ opacity: 0.8, filter: preset.active ? 'none' : 'grayscale(1)' }}>
+                            {preset.active ? '\uD83D\uDE48' : '\uD83D\uDC41\uFE0F'}
+                          </span>
+                          <span className="text-xs flex-1" style={{ fontFamily: 'var(--font-ui)', color: preset.active ? 'var(--text-muted)' : 'var(--text)', textDecoration: preset.active ? 'line-through' : 'none' }}>
                             {preset.label}
                           </span>
                           {preset.matchCount > 0 && (
-                            <span className="text-[10px] px-1.5 rounded" style={{
-                              background: preset.active ? 'rgba(212,160,74,0.2)' : 'var(--hover-bg)',
-                              color: preset.active ? 'var(--accent)' : 'var(--text-muted)',
-                            }}>
+                            <span className="text-[10px] px-1.5 rounded" style={{ background: 'var(--hover-bg)', color: 'var(--text-muted)' }}>
                               {preset.matchCount}
                             </span>
                           )}
-                        </div>
-                        <p className="text-[10px] mt-0.5" style={{ color: 'var(--text-muted)' }}>{preset.description}</p>
-                      </div>
-                    </button>
-                  );
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
-                  return (
-                    <>
-                      {genericPresets.length > 0 && (
-                        <div className="mb-3">
-                          <p className="text-[10px] uppercase tracking-wider mb-1.5" style={{ color: 'var(--text-muted)' }}>General</p>
-                          <div className="flex flex-col gap-1">{genericPresets.map(renderPreset)}</div>
-                        </div>
+                {/* Claude Code presets — with "hide all" shortcut */}
+                {claudePresets.length > 0 && (
+                  <div>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <p className="text-[10px] uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Claude Code</p>
+                      {claudeUnhidden > 0 && (
+                        <button
+                          className="text-[10px] px-2 py-0.5 rounded transition-colors"
+                          style={{ color: 'var(--accent)', background: 'var(--hover-bg)', border: '1px solid var(--border)', cursor: 'pointer' }}
+                          onClick={() => handleHideAll(claudePresets.filter(p => !p.active).map(p => p.id))}
+                        >
+                          Hide all agent files
+                        </button>
                       )}
-                      {claudePresets.length > 0 && (
-                        <div>
-                          <p className="text-[10px] uppercase tracking-wider mb-1.5" style={{ color: 'var(--text-muted)' }}>Claude Code</p>
-                          <div className="flex flex-col gap-1">{claudePresets.map(renderPreset)}</div>
-                        </div>
-                      )}
-                    </>
-                  );
-                })()}
+                    </div>
+                    <p className="text-[10px] mb-2" style={{ color: 'var(--text-muted)' }}>
+                      Agent internals — skills, sessions, pipeline artifacts, memory. Usually safe to hide.
+                    </p>
+                    <div className="flex flex-col gap-1">
+                      {claudePresets.map(preset => (
+                        <button
+                          key={preset.id}
+                          className="flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-left transition-all"
+                          style={{
+                            background: 'transparent',
+                            border: '1px solid var(--border)',
+                            opacity: preset.matchCount === 0 && !preset.active ? 0.35 : 1,
+                          }}
+                          onClick={() => handleTogglePreset(preset.id)}
+                        >
+                          <span className="text-sm shrink-0" style={{ opacity: 0.8, filter: preset.active ? 'none' : 'grayscale(1)' }}>
+                            {preset.active ? '\uD83D\uDE48' : '\uD83D\uDC41\uFE0F'}
+                          </span>
+                          <span className="text-xs flex-1" style={{ fontFamily: 'var(--font-ui)', color: preset.active ? 'var(--text-muted)' : 'var(--text)', textDecoration: preset.active ? 'line-through' : 'none' }}>
+                            {preset.label}
+                          </span>
+                          {preset.matchCount > 0 && (
+                            <span className="text-[10px] px-1.5 rounded" style={{ background: 'var(--hover-bg)', color: 'var(--text-muted)' }}>
+                              {preset.matchCount}
+                            </span>
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Watch directories */}
@@ -304,7 +321,7 @@ export function PreferencesPanel({ open: isOpen, onClose, onPresetsChanged }: Pr
                         <span
                           className="text-xs flex-1 truncate"
                           style={{
-                            fontFamily: 'var(--font-jetbrains-mono), monospace',
+                            fontFamily: 'var(--font-mono)',
                             color: isDisabled ? 'var(--text-muted)' : 'var(--text)',
                             textDecoration: isDisabled ? 'line-through' : 'none',
                           }}
@@ -315,7 +332,6 @@ export function PreferencesPanel({ open: isOpen, onClose, onPresetsChanged }: Pr
                           className="text-[10px] px-1.5 py-0.5 rounded hover:bg-[var(--border)] transition-colors"
                           style={{ color: isDisabled ? 'var(--accent)' : 'var(--text-muted)' }}
                           onClick={() => handleToggleDir(dir)}
-                          title={isDisabled ? 'Re-enable this folder' : 'Temporarily hide files from this folder'}
                         >
                           {isDisabled ? 'Enable' : 'Disable'}
                         </button>
@@ -323,7 +339,6 @@ export function PreferencesPanel({ open: isOpen, onClose, onPresetsChanged }: Pr
                           className="text-[10px] px-1.5 py-0.5 rounded hover:bg-[var(--border)] transition-colors"
                           style={{ color: '#f87171' }}
                           onClick={() => handleRemoveDir(dir)}
-                          title="Permanently remove this folder"
                         >
                           Remove
                         </button>
