@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { listen } from '@tauri-apps/api/event';
 import { open } from '@tauri-apps/plugin-dialog';
 import { api } from '../lib/api';
-import type { FileEntry, SidebarView, FileContentResponse, FolderNode, SearchResult, TauriEvent } from '../lib/types';
+import type { FileEntry, SidebarView, FileContentResponse, FolderNode, SearchResult, TauriEvent, WhatsNewResponse, SmartCollection } from '../lib/types';
 import { Sidebar } from './Sidebar';
 import { MarkdownPreview, PALETTES, type PaletteId } from './MarkdownPreview';
 import { StatusBar } from './StatusBar';
@@ -68,6 +68,14 @@ export default function AppShell() {
   // Shortcuts cheat sheet
   const [showShortcuts, setShowShortcuts] = useState(false);
 
+  // v0.5: What's New state
+  const [whatsNewData, setWhatsNewData] = useState<WhatsNewResponse | null>(null);
+  const [whatsNewLoading, setWhatsNewLoading] = useState(false);
+
+  // v0.6: Collections state
+  const [collections, setCollections] = useState<SmartCollection[]>([]);
+  const [collectionsLoading, setCollectionsLoading] = useState(false);
+
   // Zoom & display
   const ZOOM_STEPS = [0.85, 1, 1.25, 1.5, 2];
   const [zoomLevel, setZoomLevel] = useState(1);
@@ -126,6 +134,13 @@ export default function AppShell() {
       })
       .catch(() => {});
   }, []);
+
+  // --- Record session start on mount (v0.5) ---
+  useEffect(() => {
+    api.recordSessionStart().catch(() => {});
+  }, []);
+
+  // (folder-dropped listener is below, after addWatchDir is defined)
 
   // --- Known paths for instant link navigation ---
   const knownPaths = useMemo(() => new Set(files.map(f => f.path)), [files]);
@@ -331,12 +346,42 @@ export default function AppShell() {
     } catch { /* silent */ }
   }, [fetchFiles]);
 
+  // --- Fetch What's New data (v0.5) ---
+  const fetchWhatsNew = useCallback(async () => {
+    setWhatsNewLoading(true);
+    try {
+      const data = await api.getWhatsNew();
+      setWhatsNewData(data);
+    } catch {
+      setWhatsNewData({ lastSessionAt: null, newFiles: [], updatedFiles: [], totalChanges: 0 });
+    } finally {
+      setWhatsNewLoading(false);
+    }
+  }, []);
+
+  // --- Fetch collections (v0.6) ---
+  const fetchCollections = useCallback(async () => {
+    setCollectionsLoading(true);
+    try {
+      const data = await api.getCollections();
+      setCollections(data);
+    } catch {
+      setCollections([]);
+    } finally {
+      setCollectionsLoading(false);
+    }
+  }, []);
+
   // --- Change sidebar view (persisted) ---
   const changeView = useCallback((view: SidebarView) => {
     setSidebarView(view);
-    fetchFiles(view);
+    if (view === 'whats-new') {
+      fetchWhatsNew();
+    } else {
+      fetchFiles(view);
+    }
     api.saveUiState({ sidebarView: view }).catch(() => {});
-  }, [fetchFiles]);
+  }, [fetchFiles, fetchWhatsNew]);
 
   // --- Remove a custom watch directory ---
   const removeWatchDir = useCallback(async (dir: string) => {
@@ -356,6 +401,20 @@ export default function AppShell() {
       fetchFiles();
     } catch { /* ignore */ }
   }, [fetchFiles]);
+
+  // --- Listen for folder-dropped Tauri event ---
+  useEffect(() => {
+    let unlisten: (() => void) | null = null;
+    (async () => {
+      try {
+        unlisten = await listen<{ path: string }>('folder-dropped', (event) => {
+          const dir = event.payload?.path;
+          if (dir) addWatchDir(dir);
+        });
+      } catch { /* event may not exist yet */ }
+    })();
+    return () => { if (unlisten) unlisten(); };
+  }, [addWatchDir]);
 
   const toggleCollapse = useCallback(() => {
     setSidebarCollapsed(prev => {
@@ -587,6 +646,7 @@ export default function AppShell() {
         case '1': changeView('recents'); break;
         case '2': changeView('folders'); break;
         case '3': changeView('favorites'); break;
+        case '4': changeView('whats-new'); break;
         case 's': {
           if (selectedPath) toggleStar(selectedPath);
           break;
@@ -634,66 +694,142 @@ export default function AppShell() {
     } catch { /* user cancelled */ }
   }, [addWatchDir]);
 
-  // --- Welcome Screen Component ---
+  // --- Onboarding: quick-add a suggested path ---
+  const handleQuickAdd = useCallback(async (path: string) => {
+    try {
+      await addWatchDir(path);
+      setShowWelcome(false);
+      welcomeDismissedRef.current = true;
+    } catch { /* silent */ }
+  }, [addWatchDir]);
+
+  // --- Welcome Screen Component (enhanced onboarding) ---
   if (showWelcome) {
+    const suggestedPaths = [
+      { path: '~/.claude/', desc: 'Claude config', icon: '\uD83E\uDD16' },
+      { path: '~/Documents/', desc: 'Documents', icon: '\uD83D\uDCC4' },
+      { path: '~/Desktop/', desc: 'Desktop', icon: '\uD83D\uDDA5' },
+      { path: '~/Projects/', desc: 'Projects', icon: '\uD83D\uDCBB' },
+    ];
+
     return (
       <div
-        className="flex flex-col items-center justify-center h-screen gap-6"
+        className="flex flex-col items-center justify-center h-screen"
         style={{ background: 'var(--bg)', color: 'var(--text)' }}
       >
-        <div className="text-center">
-          <h1
-            className="text-3xl font-bold mb-2"
-            style={{ fontFamily: 'var(--font-jetbrains-mono), monospace', color: '#d4a04a' }}
-          >
-            MarkScout
-          </h1>
-          <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
-            A local markdown file viewer
-          </p>
-        </div>
+        <div style={{ maxWidth: 420, width: '100%', padding: '0 24px' }}>
+          {/* Header */}
+          <div className="text-center" style={{ marginBottom: 32 }}>
+            <h1
+              style={{
+                fontFamily: 'var(--font-jetbrains-mono), monospace',
+                fontSize: 32,
+                fontWeight: 700,
+                color: '#d4a04a',
+                marginBottom: 6,
+              }}
+            >
+              MarkScout
+            </h1>
+            <p style={{ fontSize: 14, color: 'var(--text-muted)' }}>
+              A local markdown file viewer
+            </p>
+          </div>
 
-        <div className="flex flex-col items-center gap-3">
-          <button
-            className="px-6 py-3 rounded-lg text-sm font-medium transition-colors"
+          {/* Suggested paths */}
+          <div style={{ marginBottom: 20 }}>
+            <p
+              style={{
+                fontFamily: 'var(--font-jetbrains-mono), monospace',
+                fontSize: 11,
+                color: 'var(--text-muted)',
+                marginBottom: 10,
+                textAlign: 'center',
+              }}
+            >
+              Common locations for vibe coders:
+            </p>
+            <div className="flex flex-col gap-2">
+              {suggestedPaths.map(sp => (
+                <button
+                  key={sp.path}
+                  className="onboard-path"
+                  onClick={() => {
+                    // Expand ~ to home directory path
+                    handleQuickAdd(sp.path);
+                  }}
+                >
+                  <span style={{ fontSize: 18 }}>{sp.icon}</span>
+                  <div className="flex-1">
+                    <div className="path-name">{sp.path}</div>
+                    <div className="path-desc">{sp.desc}</div>
+                  </div>
+                  <span style={{ color: 'var(--text-muted)', fontSize: 14 }}>{'\u203A'}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Instruction text */}
+          <p
             style={{
-              background: '#d4a04a',
-              color: '#0d0d0d',
-              fontFamily: 'var(--font-jetbrains-mono), monospace',
-              border: 'none',
-              cursor: 'pointer',
+              fontSize: 11,
+              color: 'var(--text-muted)',
+              textAlign: 'center',
+              marginBottom: 14,
             }}
-            onClick={triggerAddFolder}
-            onMouseEnter={e => (e.currentTarget.style.background = '#e0b060')}
-            onMouseLeave={e => (e.currentTarget.style.background = '#d4a04a')}
           >
-            Add Folder
-          </button>
-
-          <p className="text-xs" style={{ color: 'var(--text-muted)', maxWidth: 300, textAlign: 'center' }}>
-            Choose a folder containing markdown files to start reading.
+            Click a path to add it, or:
           </p>
-        </div>
 
-        <button
-          className="text-xs mt-4 transition-colors"
-          style={{
-            color: 'var(--text-muted)',
-            background: 'none',
-            border: 'none',
-            cursor: 'pointer',
-            textDecoration: 'underline',
-            textUnderlineOffset: 3,
-          }}
-          onClick={() => {
-            setShowWelcome(false);
-            welcomeDismissedRef.current = true;
-          }}
-          onMouseEnter={e => (e.currentTarget.style.color = 'var(--text)')}
-          onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-muted)')}
-        >
-          Skip — use defaults
-        </button>
+          {/* Choose Folder button */}
+          <div className="flex justify-center" style={{ marginBottom: 20 }}>
+            <button
+              style={{
+                padding: '10px 24px',
+                borderRadius: 8,
+                background: '#d4a04a',
+                color: '#0d0d0d',
+                fontFamily: 'var(--font-jetbrains-mono), monospace',
+                fontSize: 13,
+                fontWeight: 600,
+                border: 'none',
+                cursor: 'pointer',
+                transition: 'background 0.15s',
+              }}
+              onClick={triggerAddFolder}
+              onMouseEnter={e => (e.currentTarget.style.background = '#e0b060')}
+              onMouseLeave={e => (e.currentTarget.style.background = '#d4a04a')}
+            >
+              + Choose Folder
+            </button>
+          </div>
+
+          {/* Skip */}
+          <div className="text-center">
+            <button
+              style={{
+                color: 'var(--text-muted)',
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                fontSize: 12,
+                fontFamily: 'var(--font-jetbrains-mono), monospace',
+                textDecoration: 'underline',
+                textUnderlineOffset: 3,
+                transition: 'color 0.12s',
+              }}
+              onClick={() => {
+                setShowWelcome(false);
+                welcomeDismissedRef.current = true;
+              }}
+              onMouseEnter={e => (e.currentTarget.style.color = 'var(--text)')}
+              onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-muted)')}
+            >
+              Skip {'\u2014'} start with no folders
+            </button>
+          </div>
+        </div>
       </div>
     );
   }
@@ -796,6 +932,11 @@ export default function AppShell() {
             onToggleContentSearch={toggleContentSearch}
             searchResults={searchResults}
             searchLoading={searchLoading}
+            whatsNewData={whatsNewData}
+            whatsNewLoading={whatsNewLoading}
+            collections={collections}
+            collectionsLoading={collectionsLoading}
+            onOpenCollections={fetchCollections}
           />
         </div>
 
@@ -857,7 +998,7 @@ export default function AppShell() {
             <h2 style={{ fontSize: 28, marginBottom: 24, color: 'var(--accent)' }}>Keyboard Shortcuts</h2>
             <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '14px 24px', fontSize: 20 }}>
               {([
-                ['1 2 3', 'Switch sidebar view'],
+                ['1 2 3 4', 'Switch sidebar view'],
                 ['j / k', 'Navigate files (up / down)'],
                 ['s', 'Star / unstar file'],
                 ['/', 'Focus search'],

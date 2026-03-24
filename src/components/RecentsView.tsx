@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import type { FileEntry } from '../lib/types';
-import { FileItem } from './FileItem';
+import { FileItem, getStalenessOpacity } from './FileItem';
 
 interface RecentsViewProps {
   files: FileEntry[];
@@ -73,6 +73,7 @@ export function RecentsView({
               starred={favorites.has(file.path)}
               onSelect={onSelectFile}
               onToggleStar={onToggleStar}
+              stalenessOpacity={getStalenessOpacity(file.modifiedAt)}
             />
           ))}
         </div>

@@ -1,7 +1,10 @@
-import type { FileEntry, SidebarView, FolderNode, SearchResult } from '../lib/types';
+import { useState } from 'react';
+import type { FileEntry, SidebarView, FolderNode, SearchResult, WhatsNewResponse, SmartCollection } from '../lib/types';
 import { RecentsView } from './RecentsView';
 import { FoldersView } from './FoldersView';
 import { FavoritesView } from './FavoritesView';
+import { WhatsNewView } from './WhatsNewView';
+import { CollectionsView } from './CollectionsView';
 import { FileItem } from './FileItem';
 import type { RefObject } from 'react';
 
@@ -35,9 +38,17 @@ interface SidebarProps {
   onToggleContentSearch: () => void;
   searchResults: SearchResult[] | null;
   searchLoading: boolean;
+  // v0.5
+  whatsNewData: WhatsNewResponse | null;
+  whatsNewLoading: boolean;
+  // v0.6
+  collections: SmartCollection[];
+  collectionsLoading: boolean;
+  onOpenCollections: () => void;
 }
 
 const TABS: { view: SidebarView; icon: string; label: string; shortcut: string }[] = [
+  { view: 'whats-new', icon: '\u2726', label: 'New', shortcut: '4' },
   { view: 'recents', icon: '\u23F1', label: 'Recents', shortcut: '1' },
   { view: 'folders', icon: '\uD83D\uDCC1', label: 'Folders', shortcut: '2' },
   { view: 'favorites', icon: '\u2B50', label: 'Faves', shortcut: '3' },
@@ -85,7 +96,14 @@ export function Sidebar({
   onToggleContentSearch,
   searchResults,
   searchLoading,
+  whatsNewData,
+  whatsNewLoading,
+  collections,
+  collectionsLoading,
+  onOpenCollections,
 }: SidebarProps) {
+  const [showCollections, setShowCollections] = useState(false);
+
   return (
     <aside
       className="flex flex-col border-r h-full shrink-0 transition-all duration-200"
@@ -201,6 +219,16 @@ export function Sidebar({
             )
           ) : (
             <>
+              {view === 'whats-new' && (
+                <WhatsNewView
+                  data={whatsNewData}
+                  loading={whatsNewLoading}
+                  selectedPath={selectedPath}
+                  onSelectFile={onSelectFile}
+                  onToggleStar={onToggleStar}
+                  favorites={favorites}
+                />
+              )}
               {view === 'recents' && (
                 <RecentsView
                   files={files}
@@ -244,7 +272,56 @@ export function Sidebar({
         </div>
       )}
 
-      {/* Collapse toggle -- bottom when collapsed, below content when expanded */}
+      {/* Collections toggle section */}
+      {!collapsed && (
+        <div
+          className="border-t"
+          style={{ borderColor: 'var(--border)' }}
+        >
+          <button
+            onClick={() => {
+              const next = !showCollections;
+              setShowCollections(next);
+              if (next) onOpenCollections();
+            }}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              width: '100%',
+              padding: '6px 12px',
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              fontFamily: 'var(--font-jetbrains-mono), monospace',
+              fontSize: 10,
+              color: 'var(--text-muted)',
+              transition: 'color 0.12s',
+            }}
+            onMouseEnter={e => (e.currentTarget.style.color = 'var(--text)')}
+            onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-muted)')}
+          >
+            <span>{showCollections ? '\u25BE' : '\u25B8'} Collections</span>
+            {collections.length > 0 && (
+              <span style={{ fontSize: 9, opacity: 0.6 }}>{collections.length}</span>
+            )}
+          </button>
+          {showCollections && (
+            <div style={{ maxHeight: 240, overflowY: 'auto' }} className="sidebar-scroll">
+              <CollectionsView
+                collections={collections}
+                loading={collectionsLoading}
+                selectedPath={selectedPath}
+                onSelectFile={onSelectFile}
+                onToggleStar={onToggleStar}
+                favorites={favorites}
+              />
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Collapse toggle */}
       {collapsed && <div className="flex-1" />}
       <button
         className="tab-btn mx-auto mb-2 mt-2 text-xs"

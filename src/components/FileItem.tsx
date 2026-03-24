@@ -14,6 +14,8 @@ interface FileItemProps {
   snippet?: string;      // Content search match snippet
   searchQuery?: string;  // The query term to highlight in snippet
   matchCount?: number;   // Number of matches in file
+  badge?: 'new' | 'updated' | null; // v0.5: change badge
+  stalenessOpacity?: number; // v0.5: staleness visual indicator (0-1)
 }
 
 function formatRelativeTime(epochMs: number): string {
@@ -58,6 +60,21 @@ function HighlightedSnippet({ text, query }: { text: string; query: string }) {
   );
 }
 
+/** Calculate staleness opacity from modifiedAt timestamp */
+export function getStalenessOpacity(modifiedAt: number): number {
+  const diff = Date.now() - modifiedAt;
+  const HOUR = 60 * 60 * 1000;
+  const DAY = 24 * HOUR;
+  const WEEK = 7 * DAY;
+  const MONTH = 30 * DAY;
+
+  if (diff < HOUR) return 1.0;
+  if (diff < DAY) return 0.9;
+  if (diff < WEEK) return 0.75;
+  if (diff < MONTH) return 0.6;
+  return 0.5;
+}
+
 export const FileItem = memo(function FileItem({
   file,
   selected,
@@ -71,6 +88,8 @@ export const FileItem = memo(function FileItem({
   snippet,
   searchQuery,
   matchCount,
+  badge,
+  stalenessOpacity,
 }: FileItemProps) {
   const timestamp = timeField || file.modifiedAt;
   const label = timeLabel || '';
@@ -80,15 +99,20 @@ export const FileItem = memo(function FileItem({
       className={`file-item ${selected ? 'active' : ''}`}
       data-selected={selected || undefined}
       onClick={() => onSelect(file.path)}
-      style={indentPx !== undefined ? { paddingLeft: `${indentPx}px` } : undefined}
+      style={{
+        ...(indentPx !== undefined ? { paddingLeft: `${indentPx}px` } : {}),
+        ...(stalenessOpacity !== undefined && stalenessOpacity < 1 ? { opacity: stalenessOpacity } : {}),
+      }}
     >
       <div className="flex items-start justify-between gap-2">
         <div className="flex-1 min-w-0">
           <div
-            className="text-sm font-medium truncate"
+            className="text-sm font-medium truncate flex items-center gap-2"
             style={{ fontFamily: 'var(--font-jetbrains-mono), monospace', color: 'var(--text)' }}
           >
-            {file.name}
+            <span className="truncate">{file.name}</span>
+            {badge === 'new' && <span className="badge-new">NEW</span>}
+            {badge === 'updated' && <span className="badge-updated">UPDATED</span>}
           </div>
           <div className="text-xs mt-0.5 flex items-center gap-1.5" style={{ color: 'var(--text-muted)' }}>
             <span className="truncate">{label}{formatRelativeTime(timestamp)}</span>

@@ -1,6 +1,6 @@
 // MarkScout — Core Types (Tauri frontend)
 
-export type SidebarView = 'recents' | 'folders' | 'favorites';
+export type SidebarView = 'whats-new' | 'recents' | 'folders' | 'favorites';
 
 export interface FileEntry {
   path: string;           // Absolute file path
@@ -147,4 +147,33 @@ export interface FolderNode {
   files: FileEntry[];
   children: FolderNode[];
   fileCount: number;
+}
+
+// v0.5 — Session Intelligence
+export interface ProjectGroup {
+  project: string;
+  files: FileEntry[];
+}
+
+export interface WhatsNewResponse {
+  lastSessionAt: number | null;
+  newFiles: ProjectGroup[];
+  updatedFiles: ProjectGroup[];
+  totalChanges: number;
+}
+
+// v0.6 — Smart Collections
+export interface SmartCollection {
+  id: string;
+  label: string;
+  icon: string;
+  files: FileEntry[];
+  count: number;
+}
+
+export interface FileLink {
+  targetPath: string;
+  targetName: string;
+  linkText: string;
+  lineNumber: number;
 }

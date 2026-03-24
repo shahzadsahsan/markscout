@@ -667,3 +667,89 @@ pre:hover .copy-btn {
   background: var(--accent);
   opacity: 0.7;
 }
+
+/* ===== v0.5: Change Badges ===== */
+.badge-new {
+  font-family: var(--font-jetbrains-mono), monospace;
+  font-size: 9px;
+  padding: 1px 5px;
+  border-radius: 3px;
+  background: var(--accent);
+  color: var(--bg);
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  flex-shrink: 0;
+}
+.badge-updated {
+  font-family: var(--font-jetbrains-mono), monospace;
+  font-size: 9px;
+  padding: 1px 5px;
+  border-radius: 3px;
+  background: var(--hover-bg);
+  color: var(--text-muted);
+  font-weight: 500;
+  border: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+/* ===== v0.6: Collection Cards ===== */
+.collection-card {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  cursor: pointer;
+  transition: all 0.12s;
+  font-family: var(--font-jetbrains-mono), monospace;
+}
+.collection-card:hover {
+  background: var(--hover-bg);
+  border-color: var(--text-muted);
+}
+
+/* ===== v0.6: File Link Pills ===== */
+.file-link-pill {
+  font-family: var(--font-jetbrains-mono), monospace;
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: var(--hover-bg);
+  color: var(--accent);
+  cursor: pointer;
+  border: 1px solid var(--border);
+  transition: all 0.12s;
+}
+.file-link-pill:hover {
+  background: var(--active-bg);
+  border-color: var(--accent);
+}
+
+/* ===== v0.5: Onboarding Path Suggestions ===== */
+.onboard-path {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  cursor: pointer;
+  transition: all 0.15s;
+  font-family: var(--font-jetbrains-mono), monospace;
+  width: 100%;
+}
+.onboard-path:hover {
+  border-color: var(--accent);
+  background: var(--hover-bg);
+}
+.onboard-path .path-name {
+  color: var(--text);
+  font-size: 13px;
+}
+.onboard-path .path-desc {
+  color: var(--text-muted);
+  font-size: 11px;
+}

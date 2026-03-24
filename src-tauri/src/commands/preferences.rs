@@ -87,7 +87,17 @@ pub async fn add_watch_dir(
     state: State<'_, AppStateManager>,
     path: String,
 ) -> Result<(), String> {
-    state.add_watch_dir(&path).await.map_err(|e| e.to_string())
+    // Expand ~ to home directory
+    let expanded = if path.starts_with('~') {
+        if let Some(home) = dirs::home_dir() {
+            path.replacen('~', &home.to_string_lossy(), 1)
+        } else {
+            path
+        }
+    } else {
+        path
+    };
+    state.add_watch_dir(&expanded).await.map_err(|e| e.to_string())
 }
 
 #[tauri::command]

@@ -1,5 +1,5 @@
 import { useMemo, useCallback, useEffect, useRef, useState, type CSSProperties } from 'react';
-import type { FileContentResponse } from '../lib/types';
+import type { FileContentResponse, FileLink } from '../lib/types';
 import { api } from '../lib/api';
 
 // Color palette definitions
@@ -275,6 +275,24 @@ export function MarkdownPreview({
   const [showPalettePicker, setShowPalettePicker] = useState(false);
   const paletteBtnRef = useRef<HTMLButtonElement>(null);
   const paletteDropdownRef = useRef<HTMLDivElement>(null);
+  const [fileLinks, setFileLinks] = useState<FileLink[]>([]);
+
+  // Fetch file links when file changes
+  useEffect(() => {
+    if (!fileContent?.path) {
+      setFileLinks([]);
+      return;
+    }
+    let cancelled = false;
+    api.getFileLinks(fileContent.path)
+      .then(links => {
+        if (!cancelled) setFileLinks(links);
+      })
+      .catch(() => {
+        if (!cancelled) setFileLinks([]);
+      });
+    return () => { cancelled = true; };
+  }, [fileContent?.path]);
 
   // Close palette picker on click outside
   useEffect(() => {
@@ -523,6 +541,23 @@ export function MarkdownPreview({
               <span>{'\u00B7'}</span>
               <span>{fileContent.readingTime}m read</span>
             </div>
+            {fileLinks.length > 0 && (
+              <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
+                <span style={{ fontSize: 10, color: 'var(--text-muted)', fontFamily: 'var(--font-jetbrains-mono), monospace' }}>
+                  Related:
+                </span>
+                {fileLinks.map(link => (
+                  <button
+                    key={link.targetPath}
+                    className="file-link-pill"
+                    onClick={() => onSelectFile(link.targetPath)}
+                    title={link.targetPath}
+                  >
+                    {link.targetName}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           <div className="flex items-center gap-2">

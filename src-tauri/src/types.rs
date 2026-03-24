@@ -136,6 +136,45 @@ pub struct AppState {
 
     #[serde(default)]
     pub excluded_folders: Vec<String>,
+
+    #[serde(default)]
+    pub last_session_at: Option<u64>,
+}
+
+// --- v0.5 / v0.6 Response Types ---
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct WhatsNewResponse {
+    pub last_session_at: Option<u64>,
+    pub changed_files: Vec<ProjectGroup>,
+    pub total_changes: u32,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ProjectGroup {
+    pub project: String,
+    pub files: Vec<FileEntry>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SmartCollection {
+    pub id: String,
+    pub label: String,
+    pub icon: String,
+    pub files: Vec<FileEntry>,
+    pub count: u32,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct FileLink {
+    pub target_path: String,
+    pub target_name: String,
+    pub link_text: String,
+    pub line_number: u32,
 }
 
 // --- Folder Node ---

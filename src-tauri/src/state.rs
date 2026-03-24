@@ -63,6 +63,7 @@ fn default_state() -> AppState {
             content_search: false,
         },
         excluded_folders: vec![],
+        last_session_at: None,
     }
 }
 
@@ -488,6 +489,26 @@ impl AppStateManager {
             self.save(&state).await?;
         }
         Ok(())
+    }
+
+    // --- Session Tracking ---
+
+    /// Record that a new session has started. Returns the PREVIOUS session timestamp
+    /// so the frontend knows "changes since X".
+    pub async fn record_session_start(
+        &self,
+    ) -> Result<Option<u64>, Box<dyn std::error::Error + Send + Sync>> {
+        let mut state = self.state.lock().await;
+        let previous = state.last_session_at;
+        state.last_session_at = Some(now_millis());
+        self.save(&state).await?;
+        Ok(previous)
+    }
+
+    /// Get the last session timestamp.
+    pub async fn get_last_session_at(&self) -> Option<u64> {
+        let state = self.state.lock().await;
+        state.last_session_at
     }
 
     /// Live move tracking: check if a newly added file's hash matches any
