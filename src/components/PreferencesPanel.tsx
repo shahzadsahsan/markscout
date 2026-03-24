@@ -154,7 +154,7 @@ export function PreferencesPanel({ open: isOpen, onClose, onPresetsChanged }: Pr
                 <h3 className="text-xs font-medium uppercase tracking-wider mb-3" style={{ color: 'var(--text-muted)' }}>
                   Typography
                 </h3>
-                <div className="grid grid-cols-5 gap-2">
+                <div className="grid grid-cols-3 gap-2">
                   {TYPOGRAPHY_PRESETS.map(tp => {
                     const isActive = activeTypography === tp.id;
                     return (
@@ -168,11 +168,13 @@ export function PreferencesPanel({ open: isOpen, onClose, onPresetsChanged }: Pr
                           cursor: 'pointer',
                         }}
                       >
-                        <span className="text-[10px] font-medium" style={{ fontFamily: 'var(--font-ui)', color: isActive ? 'var(--accent)' : 'var(--text)' }}>
+                        <span className="text-xs font-medium" style={{ fontFamily: 'var(--font-ui)', color: isActive ? 'var(--accent)' : 'var(--text)' }}>
                           {tp.label}
                         </span>
-                        <span className="text-[9px] leading-tight" style={{ fontFamily: tp.vars['--font-body'], color: 'var(--text-muted)' }}>
+                        <span className="text-sm leading-tight" style={{ fontFamily: tp.vars['--font-body'], color: 'var(--text-muted)' }}>
                           The quick brown fox
+                          <br />
+                          jumps over the lazy dog
                         </span>
                       </button>
                     );
@@ -354,6 +356,26 @@ export function PreferencesPanel({ open: isOpen, onClose, onPresetsChanged }: Pr
                 >
                   + Add Folder
                 </button>
+                <div className="flex gap-1.5 mt-2">
+                  <input
+                    type="text"
+                    placeholder="Or type a path (e.g. ~/.claude/)"
+                    className="flex-1 px-2 py-1 text-xs rounded"
+                    style={{ background: 'var(--bg)', color: 'var(--text)', border: '1px solid var(--border)', fontFamily: 'var(--font-mono)', outline: 'none' }}
+                    onKeyDown={async (e) => {
+                      if (e.key === 'Enter') {
+                        const val = (e.target as HTMLInputElement).value.trim();
+                        if (val) {
+                          await api.addWatchDir(val);
+                          setCustomDirs(prev => [...prev, val]);
+                          setWatchDirs(prev => [...prev, val]);
+                          (e.target as HTMLInputElement).value = '';
+                          onPresetsChanged();
+                        }
+                      }
+                    }}
+                  />
+                </div>
               </div>
             </>
           )}

@@ -27,7 +27,7 @@ export function RecentsView({
   favorites,
 }: RecentsViewProps) {
   const [timeFilter, setTimeFilter] = useState<TimeFilter>('all');
-
+  const [groupByFolder, setGroupByFolder] = useState(() => localStorage.getItem('markscout-recents-grouped') === 'true');
 
   const filteredFiles = useMemo(() => {
     if (timeFilter === 'all') return files;
@@ -35,6 +35,19 @@ export function RecentsView({
     const cutoff = Date.now() - threshold;
     return files.filter(f => f.modifiedAt >= cutoff);
   }, [files, timeFilter]);
+
+  const groupedFiles = useMemo(() => {
+    if (!groupByFolder) return null;
+    const groups = new Map<string, FileEntry[]>();
+    for (const f of filteredFiles) {
+      const arr = groups.get(f.project) || [];
+      arr.push(f);
+      groups.set(f.project, arr);
+    }
+    return [...groups.entries()]
+      .map(([project, files]) => ({ project, files, latestMod: Math.max(...files.map(f => f.modifiedAt)) }))
+      .sort((a, b) => b.latestMod - a.latestMod);
+  }, [filteredFiles, groupByFolder]);
 
   return (
     <div>
@@ -52,6 +65,19 @@ export function RecentsView({
             {f.label}
           </button>
         ))}
+        <button
+          className={`filter-pill ${groupByFolder ? 'active' : ''}`}
+          onClick={() => {
+            setGroupByFolder(prev => {
+              const next = !prev;
+              localStorage.setItem('markscout-recents-grouped', String(next));
+              return next;
+            });
+          }}
+          title="Group by folder"
+        >
+          {'\uD83D\uDCC2'}
+        </button>
       </div>
 
       {filteredFiles.length === 0 ? (
@@ -62,6 +88,41 @@ export function RecentsView({
           {files.length === 0 && (
             <p className="text-xs mt-1">Add a folder to start reading</p>
           )}
+        </div>
+      ) : groupByFolder && groupedFiles ? (
+        <div className="py-1">
+          {groupedFiles.map(group => (
+            <div key={group.project}>
+              <div
+                className="px-3 py-1.5 flex items-center gap-2"
+                style={{
+                  fontSize: 11,
+                  fontFamily: 'var(--font-mono)',
+                  color: 'var(--text-muted)',
+                  borderBottom: '1px solid var(--border)',
+                  background: 'var(--bg)',
+                  position: 'sticky',
+                  top: 0,
+                  zIndex: 1,
+                }}
+              >
+                <span>{'\uD83D\uDCC2'}</span>
+                <span>{group.project}</span>
+                <span style={{ fontSize: 9, opacity: 0.5 }}>{group.files.length}</span>
+              </div>
+              {group.files.map(file => (
+                <FileItem
+                  key={file.path}
+                  file={file}
+                  selected={file.path === selectedPath}
+                  starred={favorites.has(file.path)}
+                  onSelect={onSelectFile}
+                  onToggleStar={onToggleStar}
+                  stalenessOpacity={getStalenessOpacity(file.modifiedAt)}
+                />
+              ))}
+            </div>
+          ))}
         </div>
       ) : (
         <div className="py-1">

@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { listen } from '@tauri-apps/api/event';
 import { open } from '@tauri-apps/plugin-dialog';
 import { api } from '../lib/api';
-import type { FileEntry, SidebarView, FileContentResponse, FolderNode, SearchResult, TauriEvent, WhatsNewResponse, SmartCollection } from '../lib/types';
+import type { FileEntry, SidebarView, FileContentResponse, FolderNode, SearchResult, TauriEvent } from '../lib/types';
 import { Sidebar } from './Sidebar';
 import { MarkdownPreview, PALETTES, type PaletteId } from './MarkdownPreview';
 import { StatusBar } from './StatusBar';
@@ -68,14 +68,6 @@ export default function AppShell() {
 
   // Shortcuts cheat sheet
   const [showShortcuts, setShowShortcuts] = useState(false);
-
-  // v0.5: What's New state
-  const [whatsNewData, setWhatsNewData] = useState<WhatsNewResponse | null>(null);
-  const [whatsNewLoading, setWhatsNewLoading] = useState(false);
-
-  // v0.6: Collections state
-  const [collections, setCollections] = useState<SmartCollection[]>([]);
-  const [collectionsLoading, setCollectionsLoading] = useState(false);
 
   // Zoom & display
   const ZOOM_STEPS = [0.85, 1, 1.25, 1.5, 2];
@@ -354,42 +346,12 @@ export default function AppShell() {
     } catch { /* silent */ }
   }, [fetchFiles]);
 
-  // --- Fetch What's New data (v0.5) ---
-  const fetchWhatsNew = useCallback(async () => {
-    setWhatsNewLoading(true);
-    try {
-      const data = await api.getWhatsNew();
-      setWhatsNewData(data);
-    } catch {
-      setWhatsNewData({ lastSessionAt: null, newFiles: [], updatedFiles: [], totalChanges: 0 });
-    } finally {
-      setWhatsNewLoading(false);
-    }
-  }, []);
-
-  // --- Fetch collections (v0.6) ---
-  const fetchCollections = useCallback(async () => {
-    setCollectionsLoading(true);
-    try {
-      const data = await api.getCollections();
-      setCollections(data);
-    } catch {
-      setCollections([]);
-    } finally {
-      setCollectionsLoading(false);
-    }
-  }, []);
-
   // --- Change sidebar view (persisted) ---
   const changeView = useCallback((view: SidebarView) => {
     setSidebarView(view);
-    if (view === 'whats-new') {
-      fetchWhatsNew();
-    } else {
-      fetchFiles(view);
-    }
+    fetchFiles(view);
     api.saveUiState({ sidebarView: view }).catch(() => {});
-  }, [fetchFiles, fetchWhatsNew]);
+  }, [fetchFiles]);
 
   // --- Remove a custom watch directory ---
   const removeWatchDir = useCallback(async (dir: string) => {
@@ -654,7 +616,6 @@ export default function AppShell() {
         case '1': changeView('recents'); break;
         case '2': changeView('folders'); break;
         case '3': changeView('favorites'); break;
-        case '4': changeView('whats-new'); break;
         case 's': {
           if (selectedPath) toggleStar(selectedPath);
           break;
@@ -940,11 +901,7 @@ export default function AppShell() {
             onToggleContentSearch={toggleContentSearch}
             searchResults={searchResults}
             searchLoading={searchLoading}
-            whatsNewData={whatsNewData}
-            whatsNewLoading={whatsNewLoading}
-            collections={collections}
-            collectionsLoading={collectionsLoading}
-            onOpenCollections={fetchCollections}
+            onOpenPreferences={() => setPrefsOpen(true)}
           />
         </div>
 
@@ -980,7 +937,6 @@ export default function AppShell() {
           filteredCount={filteredCount}
           connectionStatus={connectionStatus}
           scanComplete={scanComplete}
-          onOpenPreferences={() => setPrefsOpen(true)}
           minLines={minLines}
           onChangeMinLines={setMinLines}
         />
@@ -1006,7 +962,7 @@ export default function AppShell() {
             <h2 style={{ fontSize: 28, marginBottom: 24, color: 'var(--accent)' }}>Keyboard Shortcuts</h2>
             <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '14px 24px', fontSize: 20 }}>
               {([
-                ['1 2 3 4', 'Switch sidebar view'],
+                ['1 2 3', 'Switch sidebar view'],
                 ['j / k', 'Navigate files (up / down)'],
                 ['s', 'Star / unstar file'],
                 ['/', 'Focus search'],

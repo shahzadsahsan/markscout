@@ -12,7 +12,6 @@ interface StatusBarProps {
   filteredCount: number;
   connectionStatus: 'connected' | 'reconnecting' | 'disconnected';
   scanComplete: boolean;
-  onOpenPreferences: () => void;
   minLines: number;
   onChangeMinLines: (n: number) => void;
 }
@@ -21,7 +20,6 @@ export function StatusBar({
   totalFiles,
   filteredCount,
   scanComplete,
-  onOpenPreferences,
   minLines,
   onChangeMinLines,
 }: StatusBarProps) {
@@ -42,14 +40,9 @@ export function StatusBar({
             : `Scanning... ${totalFiles} files`}
         </span>
         {filteredCount > 0 && (
-          <button
-            className="hover:underline"
-            style={{ color: 'var(--text-muted)', background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontSize: 'inherit', fontFamily: 'inherit' }}
-            onClick={onOpenPreferences}
-            title="Open preferences to manage filters"
-          >
+          <span>
             {'\u00B7'} {filteredCount} filtered
-          </button>
+          </span>
         )}
 
         {/* Line count filter */}
@@ -80,14 +73,6 @@ export function StatusBar({
       </div>
 
       <div className="flex items-center gap-3">
-        <button
-          className="tab-btn text-xs py-0 px-1"
-          onClick={onOpenPreferences}
-          title="Preferences"
-          style={{ fontSize: '12px' }}
-        >
-          {'\u2699'} Settings
-        </button>
       </div>
     </footer>
   );

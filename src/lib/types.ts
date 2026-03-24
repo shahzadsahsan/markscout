@@ -1,6 +1,6 @@
 // MarkScout — Core Types (Tauri frontend)
 
-export type SidebarView = 'whats-new' | 'recents' | 'folders' | 'favorites';
+export type SidebarView = 'recents' | 'folders' | 'favorites';
 
 export interface FileEntry {
   path: string;           // Absolute file path
