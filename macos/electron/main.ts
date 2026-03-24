@@ -5,6 +5,7 @@ import * as net from 'net';
 import * as http from 'http';
 import * as fs from 'fs';
 import * as os from 'os';
+import { createWriteStream } from 'fs';
 import { buildMenu } from './menu';
 import { checkForUpdate, getCurrentVersion } from './updater';
 
@@ -307,6 +308,44 @@ function registerIpcHandlers(): void {
 
   ipcMain.handle('check-for-update', async () => {
     return await checkForUpdate();
+  });
+
+  ipcMain.handle('download-update', async (_event, dmgUrl: string) => {
+    if (typeof dmgUrl !== 'string' || !dmgUrl.startsWith('https://')) return { ok: false };
+
+    const downloadDir = app.getPath('downloads');
+    const dmgPath = path.join(downloadDir, 'MarkScout-update.dmg');
+
+    try {
+      // Download with redirect following (GitHub assets redirect to S3)
+      await new Promise<void>((resolve, reject) => {
+        const https = require('https') as typeof import('https');
+        const download = (url: string, redirects = 0) => {
+          if (redirects > 5) { reject(new Error('Too many redirects')); return; }
+          https.get(url, {
+            headers: { 'User-Agent': 'MarkScout' },
+          }, (res: import('http').IncomingMessage) => {
+            if (res.statusCode === 301 || res.statusCode === 302) {
+              const loc = res.headers.location;
+              if (loc) { download(loc, redirects + 1); return; }
+            }
+            if (res.statusCode !== 200) { reject(new Error(`HTTP ${res.statusCode}`)); return; }
+            const file = createWriteStream(dmgPath);
+            res.pipe(file);
+            file.on('finish', () => { file.close(); resolve(); });
+            file.on('error', reject);
+          }).on('error', reject);
+        };
+        download(dmgUrl);
+      });
+
+      // Open the DMG so macOS mounts it — user drags to Applications
+      shell.openPath(dmgPath);
+      return { ok: true, path: dmgPath };
+    } catch (err) {
+      console.error('[MarkScout] Download failed:', err);
+      return { ok: false, error: (err as Error).message };
+    }
   });
 
   ipcMain.handle('dialog:selectFolder', async () => {

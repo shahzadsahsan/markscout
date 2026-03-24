@@ -65,7 +65,8 @@ export function AppShell() {
   const searchAbortRef = useRef<AbortController | null>(null);
 
   // Update notification
-  const [updateInfo, setUpdateInfo] = useState<{ latestVersion: string; releaseUrl: string } | null>(null);
+  const [updateInfo, setUpdateInfo] = useState<{ latestVersion: string; releaseUrl: string; dmgUrl?: string | null } | null>(null);
+  const [updateDownloading, setUpdateDownloading] = useState(false);
 
   // Shortcuts cheat sheet
   const [showShortcuts, setShowShortcuts] = useState(false);
@@ -818,6 +819,33 @@ export function AppShell() {
           }}
         >
           <span>MarkScout v{updateInfo.latestVersion} available</span>
+          {updateInfo.dmgUrl && (
+            <button
+              onClick={async () => {
+                const electron = (window as unknown as { electron?: { downloadUpdate?: (url: string) => Promise<{ ok: boolean }> } }).electron;
+                if (electron?.downloadUpdate && updateInfo.dmgUrl) {
+                  setUpdateDownloading(true);
+                  const result = await electron.downloadUpdate(updateInfo.dmgUrl);
+                  setUpdateDownloading(false);
+                  if (result.ok) setUpdateInfo(null);
+                }
+              }}
+              disabled={updateDownloading}
+              style={{
+                background: '#0d0d0d',
+                color: 'var(--accent, #d4a04a)',
+                border: 'none',
+                borderRadius: 4,
+                padding: '2px 10px',
+                fontSize: 11,
+                cursor: updateDownloading ? 'wait' : 'pointer',
+                fontFamily: 'inherit',
+                opacity: updateDownloading ? 0.6 : 1,
+              }}
+            >
+              {updateDownloading ? 'Downloading...' : 'Download & Install'}
+            </button>
+          )}
           <button
             onClick={() => {
               const electron = (window as unknown as { electron?: { openExternal?: (url: string) => void } }).electron;
@@ -828,9 +856,9 @@ export function AppShell() {
               }
             }}
             style={{
-              background: '#0d0d0d',
-              color: 'var(--accent, #d4a04a)',
-              border: 'none',
+              background: 'none',
+              color: '#0d0d0d',
+              border: '1px solid rgba(0,0,0,0.3)',
               borderRadius: 4,
               padding: '2px 10px',
               fontSize: 11,
@@ -838,7 +866,7 @@ export function AppShell() {
               fontFamily: 'inherit',
             }}
           >
-            View Release
+            Release Notes
           </button>
           <button
             onClick={() => setUpdateInfo(null)}

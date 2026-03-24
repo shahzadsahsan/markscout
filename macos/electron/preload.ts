@@ -24,6 +24,7 @@ contextBridge.exposeInMainWorld('electron', {
   })(),
   checkForUpdate: () => ipcRenderer.invoke('check-for-update'),
   openExternal: (url: string) => ipcRenderer.invoke('open-external', url),
+  downloadUpdate: (dmgUrl: string) => ipcRenderer.invoke('download-update', dmgUrl),
   onUpdateAvailable: (callback: (info: unknown) => void) => {
     const handler = (_event: unknown, info: unknown) => callback(info);
     ipcRenderer.on('update-available', handler);

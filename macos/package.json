@@ -1,7 +1,7 @@
 {
   "name": "markscout-macos",
-  "version": "0.1.0",
-  "description": "MarkReader — local markdown file viewer for macOS",
+  "version": "0.3.1",
+  "description": "MarkScout — local markdown file viewer for macOS",
   "main": "dist-electron/main.js",
   "private": true,
   "scripts": {
