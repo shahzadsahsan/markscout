@@ -43,11 +43,8 @@ impl FileWatcher {
     /// Create a new FileWatcher, load watch dirs from state, perform initial
     /// scan, and start the notify watcher.
     pub fn new(handle: AppHandle) -> Result<Self, Box<dyn std::error::Error>> {
-        let state_mgr: tauri::State<'_, AppStateManager> = handle.state();
-
-        // Read watch dirs synchronously during setup
-        let prefs = run_async(async { state_mgr.get_preferences().await });
-        let watch_dirs = prefs.watch_dirs.clone();
+        // Read watch dirs directly from state file (synchronous, no async runtime needed)
+        let watch_dirs = Self::read_watch_dirs_sync();
         let has_dirs = !watch_dirs.is_empty();
 
         let fw = Self {
@@ -119,13 +116,19 @@ impl FileWatcher {
         self.scan_complete.load(Ordering::SeqCst)
     }
 
+    /// Synchronously read watch dirs from state file (for init)
+    fn read_watch_dirs_sync() -> Vec<String> {
+        read_state_sync().preferences.watch_dirs
+    }
+
     /// Get the list of currently watched directories.
     pub fn get_watched_dirs(&self) -> Vec<String> {
-        // Use try_lock for non-async contexts, block_on for async
+        // Use try_lock for non-async contexts
         if let Ok(guard) = self.watched_dirs.try_lock() {
             return guard.clone();
         }
-        run_async(async { self.watched_dirs.lock().await.clone() })
+        // Fallback: read from disk
+        Self::read_watch_dirs_sync()
     }
 
     /// Total number of files in registry.
@@ -466,18 +469,58 @@ fn walk_dir(current: &Path, root: &Path, ctx: &FilterContext, registry: &DashMap
 // Filter context loaders
 // ---------------------------------------------------------------------------
 
-fn load_filter_context_sync(handle: &AppHandle) -> FilterContext {
-    let state_mgr: tauri::State<'_, AppStateManager> = handle.state();
-    let (prefs, filters) = run_async(async {
-        let prefs = state_mgr.get_preferences().await;
-        let filters = state_mgr.get_filters().await;
-        (prefs, filters)
-    });
+fn load_filter_context_sync(_handle: &AppHandle) -> FilterContext {
+    // Read state directly from disk to avoid async runtime issues during setup
+    let state = read_state_sync();
     FilterContext {
-        active_presets: prefs.active_presets,
-        user_filters: filters,
-        min_size: prefs.min_file_length.unwrap_or(0),
+        active_presets: state.preferences.active_presets,
+        user_filters: state.filters,
+        min_size: state.preferences.min_file_length.unwrap_or(0),
+        excluded_folders: state.excluded_folders,
+    }
+}
+
+/// Read state.json synchronously (no async runtime needed)
+fn read_state_sync() -> crate::types::AppState {
+    let path = dirs::home_dir()
+        .unwrap_or_default()
+        .join(".markscout")
+        .join("state.json");
+    if let Ok(data) = std::fs::read_to_string(&path) {
+        if let Ok(state) = serde_json::from_str::<crate::types::AppState>(&data) {
+            return state;
+        }
+    }
+    // Return defaults if file doesn't exist or is invalid
+    crate::types::AppState {
+        version: 2,
+        instance_id: String::new(),
+        last_synced_at: None,
+        favorites: vec![],
+        favorite_folders: vec![],
+        history: vec![],
+        filters: crate::types::FilterConfig {
+            excluded_paths: vec![],
+            excluded_names: vec![],
+        },
+        preferences: crate::types::PreferencesState {
+            active_presets: vec![],
+            watch_dirs: vec![],
+            min_file_length: Some(0),
+        },
+        ui: crate::types::UiState {
+            sidebar_view: crate::types::SidebarView::Recents,
+            sidebar_width: 280.0,
+            sidebar_collapsed: false,
+            last_selected_path: None,
+            collapsed_groups: vec![],
+            expanded_groups: vec![],
+            zoom_level: 1.0,
+            fill_screen: false,
+            content_search: false,
+        },
         excluded_folders: vec![],
+        last_session_at: None,
     }
 }
 
@@ -493,14 +536,9 @@ async fn load_filter_context_async(handle: &AppHandle) -> FilterContext {
     }
 }
 
-fn reconcile_sync(handle: &AppHandle, registry: &Arc<DashMap<String, FileEntry>>) {
-    let state_mgr: tauri::State<'_, AppStateManager> = handle.state();
-    let hash_map: HashMap<String, String> = registry
-        .iter()
-        .map(|r| (r.key().clone(), r.value().content_hash.clone()))
-        .collect();
-
-    let _ = run_async(async { state_mgr.reconcile_paths(&hash_map).await });
+fn reconcile_sync(_handle: &AppHandle, _registry: &Arc<DashMap<String, FileEntry>>) {
+    // Move tracking reconciliation is deferred to after the async runtime is available.
+    // The frontend will trigger this via the session start command.
 }
 
 // ---------------------------------------------------------------------------

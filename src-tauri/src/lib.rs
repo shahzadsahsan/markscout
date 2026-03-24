@@ -158,17 +158,6 @@ pub fn run() {
             let state_manager = AppStateManager::new()?;
             app.manage(state_manager);
 
-            // Record session start (v0.5 session intelligence)
-            {
-                let state_mgr: tauri::State<'_, AppStateManager> = app.state();
-                // We use a blocking call since we're in setup()
-                let _previous_session = tokio::task::block_in_place(|| {
-                    tokio::runtime::Handle::current().block_on(async {
-                        state_mgr.record_session_start().await
-                    })
-                });
-            }
-
             // Initialize file watcher
             let watcher = FileWatcher::new(app.handle().clone())?;
             app.manage(watcher);
