@@ -83,6 +83,19 @@ export default function AppShell() {
     applyTypographyPreset(preset);
   }, []);
 
+  // --- Fix blank screen after macOS sleep/wake ---
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (!document.hidden) {
+        // Force WebView repaint after wake from sleep
+        document.body.style.opacity = '0.999';
+        requestAnimationFrame(() => { document.body.style.opacity = '1'; });
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => document.removeEventListener('visibilitychange', handleVisibility);
+  }, []);
+
   // --- Restore persisted UI state on mount ---
   useEffect(() => {
     api.getUiState()
