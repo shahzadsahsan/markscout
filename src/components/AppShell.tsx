@@ -28,9 +28,8 @@ export default function AppShell() {
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = useState('');
 
-  // V2: Folder features
+  // Folder features
   const [favoriteFolders, setFavoriteFolders] = useState<Set<string>>(new Set());
-  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
   const [excludedPaths, setExcludedPaths] = useState<Set<string>>(new Set());
 
   // Connection state
@@ -88,7 +87,9 @@ export default function AppShell() {
   useEffect(() => {
     api.getUiState()
       .then(data => {
-        setSidebarView(data.sidebarView || 'recents');
+        // Guard: if saved view was 'folders' (removed in v0.6), fall back to 'recents'
+        const raw = data.sidebarView || 'recents';
+        setSidebarView((raw === 'recents' || raw === 'favorites') ? raw : 'recents');
         setSidebarCollapsed(data.sidebarCollapsed || false);
         if (data.sidebarWidth) {
           setSidebarWidth(data.sidebarWidth);
@@ -96,9 +97,6 @@ export default function AppShell() {
         }
         if (data.lastSelectedPath) {
           setSelectedPath(data.lastSelectedPath);
-        }
-        if (data.expandedGroups) {
-          setExpandedGroups(new Set(data.expandedGroups));
         }
         if (data.zoomLevel !== undefined) setZoomLevel(data.zoomLevel);
         if (data.fillScreen !== undefined) setFillScreen(data.fillScreen);
@@ -316,16 +314,6 @@ export default function AppShell() {
     } catch { /* silent */ }
   }, []);
 
-  // --- Toggle folder expand/collapse (persisted) ---
-  const toggleExpand = useCallback((folderPath: string) => {
-    setExpandedGroups(prev => {
-      const next = new Set(prev);
-      if (next.has(folderPath)) next.delete(folderPath);
-      else next.add(folderPath);
-      api.saveUiState({ expandedGroups: Array.from(next) }).catch(() => {});
-      return next;
-    });
-  }, []);
 
   // --- Exclude/include folder ---
   const excludeFolder = useCallback(async (folderPath: string) => {
@@ -614,8 +602,7 @@ export default function AppShell() {
           break;
         }
         case '1': changeView('recents'); break;
-        case '2': changeView('folders'); break;
-        case '3': changeView('favorites'); break;
+        case '2': changeView('favorites'); break;
         case 's': {
           if (selectedPath) toggleStar(selectedPath);
           break;
@@ -887,16 +874,9 @@ export default function AppShell() {
             width={sidebarWidth}
             favoriteFolders={favoriteFolders}
             onToggleFolderStar={toggleFolderStar}
-            expandedGroups={expandedGroups}
-            onToggleExpand={toggleExpand}
-            excludedPaths={excludedPaths}
-            onExcludeFolder={excludeFolder}
-            onIncludeFolder={includeFolder}
             searchQuery={searchQuery}
             onSearchChange={setSearchQuery}
             searchInputRef={searchInputRef}
-            customWatchDirs={customWatchDirs}
-            onRemoveWatchDir={removeWatchDir}
             contentSearch={contentSearch}
             onToggleContentSearch={toggleContentSearch}
             searchResults={searchResults}

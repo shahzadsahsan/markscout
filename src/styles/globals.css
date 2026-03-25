@@ -491,21 +491,8 @@ pre:hover .copy-btn {
   border-radius: 4px;
 }
 
-/* ===== Ambient Glow (pseudo-element so it doesn't override palette bg) ===== */
-@keyframes ambient-pulse {
-  0%, 100% { background: radial-gradient(ellipse at 50% 30%, rgba(212, 160, 74, 0.03) 0%, transparent 70%); }
-  50% { background: radial-gradient(ellipse at 50% 70%, rgba(95, 179, 161, 0.02) 0%, transparent 70%); }
-}
 .content-area {
   position: relative;
-}
-.content-area::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  animation: ambient-pulse 30s ease-in-out infinite;
-  pointer-events: none;
-  z-index: 0;
 }
 
 /* ===== Page Transitions ===== */

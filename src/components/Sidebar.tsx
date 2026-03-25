@@ -1,6 +1,5 @@
 import type { FileEntry, SidebarView, FolderNode, SearchResult } from '../lib/types';
 import { RecentsView } from './RecentsView';
-import { FoldersView } from './FoldersView';
 import { FavoritesView } from './FavoritesView';
 import { FileItem } from './FileItem';
 import type { RefObject } from 'react';
@@ -18,19 +17,11 @@ interface SidebarProps {
   onToggleCollapse: () => void;
   loading: boolean;
   width: number;
-  // V2 props
   favoriteFolders: Set<string>;
   onToggleFolderStar: (folderPath: string) => void;
-  expandedGroups: Set<string>;
-  onToggleExpand: (folderPath: string) => void;
-  excludedPaths: Set<string>;
-  onExcludeFolder: (folderPath: string) => void;
-  onIncludeFolder: (folderPath: string) => void;
   searchQuery: string;
   onSearchChange: (query: string) => void;
   searchInputRef: RefObject<HTMLInputElement | null>;
-  customWatchDirs?: string[];
-  onRemoveWatchDir?: (dir: string) => void;
   contentSearch: boolean;
   onToggleContentSearch: () => void;
   searchResults: SearchResult[] | null;
@@ -40,8 +31,7 @@ interface SidebarProps {
 
 const TABS: { view: SidebarView; icon: string; label: string; shortcut: string }[] = [
   { view: 'recents', icon: '\u23F1', label: 'Recents', shortcut: '1' },
-  { view: 'folders', icon: '\uD83D\uDCC1', label: 'Folders', shortcut: '2' },
-  { view: 'favorites', icon: '\u2B50', label: 'Favorites', shortcut: '3' },
+  { view: 'favorites', icon: '\u2B50', label: 'Favorites', shortcut: '2' },
 ];
 
 function SkeletonList() {
@@ -72,16 +62,9 @@ export function Sidebar({
   width,
   favoriteFolders,
   onToggleFolderStar,
-  expandedGroups,
-  onToggleExpand,
-  excludedPaths,
-  onExcludeFolder,
-  onIncludeFolder,
   searchQuery,
   onSearchChange,
   searchInputRef,
-  customWatchDirs,
-  onRemoveWatchDir,
   contentSearch,
   onToggleContentSearch,
   searchResults,
@@ -218,24 +201,6 @@ export function Sidebar({
                   onSelectFile={onSelectFile}
                   onToggleStar={onToggleStar}
                   favorites={favorites}
-                />
-              )}
-              {view === 'folders' && (
-                <FoldersView
-                  folders={folders}
-                  selectedPath={selectedPath}
-                  onSelectFile={onSelectFile}
-                  onToggleStar={onToggleStar}
-                  favorites={favorites}
-                  favoriteFolders={favoriteFolders}
-                  onToggleFolderStar={onToggleFolderStar}
-                  expandedGroups={expandedGroups}
-                  onToggleExpand={onToggleExpand}
-                  excludedPaths={excludedPaths}
-                  onExcludeFolder={onExcludeFolder}
-                  onIncludeFolder={onIncludeFolder}
-                  customWatchDirs={customWatchDirs}
-                  onRemoveWatchDir={onRemoveWatchDir}
                 />
               )}
               {view === 'favorites' && (
