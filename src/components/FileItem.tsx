@@ -117,7 +117,7 @@ export const FileItem = memo(function FileItem({
           <div className="text-xs mt-0.5 flex items-center gap-1.5" style={{ color: 'var(--text-muted)' }}>
             <span className="truncate">{label}{formatRelativeTime(timestamp)}</span>
             {matchCount !== undefined && matchCount > 0 && (
-              <span style={{ color: 'var(--accent)', fontSize: 10, flexShrink: 0 }}>
+              <span style={{ color: 'var(--accent)', fontSize: 'var(--text-xs)', flexShrink: 0 }}>
                 {matchCount} match{matchCount !== 1 ? 'es' : ''}
               </span>
             )}
@@ -127,7 +127,7 @@ export const FileItem = memo(function FileItem({
               className="text-xs mt-1 line-clamp-2"
               style={{
                 color: 'var(--text-muted)',
-                fontSize: 11,
+                fontSize: 'var(--text-sm)',
                 lineHeight: 1.4,
                 opacity: 0.8,
               }}

@@ -118,7 +118,7 @@ export function Sidebar({
               className="tab-btn text-xs"
               onClick={onOpenPreferences}
               title="Settings (Cmd+,)"
-              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '4px 6px', fontSize: 14, flexShrink: 0 }}
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '4px 6px', fontSize: 'var(--text-base)', flexShrink: 0 }}
             >
               {'\u2699'}
             </button>
@@ -146,7 +146,7 @@ export function Sidebar({
           />
           <label
             className="flex items-center gap-1.5 mt-1 cursor-pointer select-none"
-            style={{ fontSize: 10, color: 'var(--text-muted)' }}
+            style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}
           >
             <input
               type="checkbox"
@@ -170,7 +170,7 @@ export function Sidebar({
               <SkeletonList />
             ) : searchResults && searchResults.length > 0 ? (
               <div className="py-1">
-                <div className="px-3 py-1 text-xs" style={{ color: 'var(--text-muted)', fontSize: 10 }}>
+                <div className="px-3 py-1 text-xs" style={{ color: 'var(--text-muted)', fontSize: 'var(--text-xs)' }}>
                   {searchResults.length} file{searchResults.length !== 1 ? 's' : ''} matched
                 </div>
                 {searchResults.map(r => (
@@ -188,7 +188,7 @@ export function Sidebar({
                 ))}
               </div>
             ) : (
-              <div className="px-3 py-6 text-center" style={{ color: 'var(--text-muted)', fontSize: 12 }}>
+              <div className="px-3 py-6 text-center" style={{ color: 'var(--text-muted)', fontSize: 'var(--text-sm)' }}>
                 No files contain &ldquo;{searchQuery}&rdquo;
               </div>
             )
@@ -225,7 +225,7 @@ export function Sidebar({
         className="tab-btn mx-auto mb-2 mt-2 text-xs"
         onClick={onToggleCollapse}
         title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-        style={{ fontSize: '14px' }}
+        style={{ fontSize: 'var(--text-base)' }}
       >
         {collapsed ? '\u25B6' : '\u25C0'}
       </button>

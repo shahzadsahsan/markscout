@@ -35,7 +35,7 @@ export function CollectionsView({
 
   if (collections.length === 0) {
     return (
-      <div className="p-4 text-center" style={{ color: 'var(--text-muted)', fontSize: 12 }}>
+      <div className="p-4 text-center" style={{ color: 'var(--text-muted)', fontSize: 'var(--text-sm)' }}>
         No collections available
       </div>
     );
@@ -53,7 +53,7 @@ export function CollectionsView({
           style={{
             borderColor: 'var(--border)',
             fontFamily: 'var(--font-ui)',
-            fontSize: 11,
+            fontSize: 'var(--text-sm)',
             color: 'var(--text-muted)',
             background: 'none',
             border: 'none',
@@ -62,9 +62,9 @@ export function CollectionsView({
           }}
           onClick={() => setActiveCollectionId(null)}
         >
-          <span style={{ fontSize: 13 }}>{'\u2190'}</span>
+          <span style={{ fontSize: 'var(--text-sm)' }}>{'\u2190'}</span>
           <span>{activeCollection.icon} {activeCollection.label}</span>
-          <span style={{ marginLeft: 'auto', fontSize: 10, opacity: 0.6 }}>
+          <span style={{ marginLeft: 'auto', fontSize: 'var(--text-xs)', opacity: 0.6 }}>
             {activeCollection.count}
           </span>
         </button>
@@ -95,10 +95,10 @@ export function CollectionsView({
           >
             <span style={{ fontSize: 16 }}>{collection.icon}</span>
             <div className="flex-1 min-w-0">
-              <div style={{ fontSize: 12, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              <div style={{ fontSize: 'var(--text-sm)', color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                 {collection.label}
               </div>
-              <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>
+              <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>
                 {collection.count} file{collection.count !== 1 ? 's' : ''}
               </div>
             </div>

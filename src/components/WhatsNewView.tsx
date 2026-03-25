@@ -61,14 +61,14 @@ export function WhatsNewView({
         <p
           style={{
             fontFamily: 'var(--font-ui)',
-            fontSize: 13,
+            fontSize: 'var(--text-sm)',
             color: 'var(--text-muted)',
             marginBottom: 4,
           }}
         >
           Everything's up to date
         </p>
-        <p style={{ fontSize: 11, color: 'var(--text-muted)', opacity: 0.6 }}>
+        <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-muted)', opacity: 0.6 }}>
           No changes since your last session
         </p>
       </div>
@@ -85,7 +85,7 @@ export function WhatsNewView({
           fontFamily: 'var(--font-ui)',
         }}
       >
-        <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+        <div style={{ fontSize: 'var(--text-sm)', color: 'var(--text-muted)' }}>
           Since your last session
           {data.lastSessionAt && (
             <span style={{ marginLeft: 6, opacity: 0.7 }}>
@@ -93,7 +93,7 @@ export function WhatsNewView({
             </span>
           )}
         </div>
-        <div style={{ fontSize: 10, color: 'var(--accent)', marginTop: 2 }}>
+        <div style={{ fontSize: 'var(--text-xs)', color: 'var(--accent)', marginTop: 2 }}>
           {data.totalChanges} change{data.totalChanges !== 1 ? 's' : ''}
         </div>
       </div>
@@ -107,7 +107,7 @@ export function WhatsNewView({
                 className="px-3 py-1.5 flex items-center justify-between"
                 style={{
                   fontFamily: 'var(--font-ui)',
-                  fontSize: 11,
+                  fontSize: 'var(--text-sm)',
                   color: 'var(--text-muted)',
                   background: 'var(--bg)',
                   position: 'sticky',
@@ -118,7 +118,7 @@ export function WhatsNewView({
                 <span>{group.project}</span>
                 <span
                   style={{
-                    fontSize: 9,
+                    fontSize: 'var(--text-xs)',
                     padding: '1px 5px',
                     borderRadius: 3,
                     background: 'var(--accent)',
@@ -156,7 +156,7 @@ export function WhatsNewView({
                 className="px-3 py-1.5 flex items-center justify-between"
                 style={{
                   fontFamily: 'var(--font-ui)',
-                  fontSize: 11,
+                  fontSize: 'var(--text-sm)',
                   color: 'var(--text-muted)',
                   background: 'var(--bg)',
                   position: 'sticky',
@@ -167,7 +167,7 @@ export function WhatsNewView({
                 <span>{group.project}</span>
                 <span
                   style={{
-                    fontSize: 9,
+                    fontSize: 'var(--text-xs)',
                     padding: '1px 5px',
                     borderRadius: 3,
                     background: 'var(--hover-bg)',

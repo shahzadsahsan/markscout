@@ -53,7 +53,7 @@ export function FavoritesView({
     return (
       <div className="p-4 text-center" style={{ color: 'var(--text-muted)' }}>
         <p className="text-sm" style={{ fontFamily: 'var(--font-ui)' }}>No favorites yet</p>
-        <p className="text-xs mt-1">Star files with <code style={{ fontSize: 11, padding: '1px 5px', borderRadius: 3, background: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--accent)' }}>s</code> or click {'\u2606'} to see them here</p>
+        <p className="text-xs mt-1">Star files with <code style={{ fontSize: 'var(--text-sm)', padding: '1px 5px', borderRadius: 3, background: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--accent)' }}>s</code> or click {'\u2606'} to see them here</p>
       </div>
     );
   }

@@ -493,7 +493,7 @@ export function MarkdownPreview({
                 className="zoom-btn shrink-0"
                 onClick={revealInFinder}
                 title="Reveal in Finder"
-                style={{ fontSize: '10px', padding: '1px 5px', display: 'flex', alignItems: 'center', gap: 3 }}
+                style={{ fontSize: 'var(--text-xs)', padding: '1px 5px', display: 'flex', alignItems: 'center', gap: 3 }}
               >
                 <span>{'\u2B21'}</span><span>Finder</span>
               </button>
@@ -602,7 +602,7 @@ export function MarkdownPreview({
                   cursor: 'pointer',
                   textAlign: 'left',
                   fontFamily: 'var(--font-ui)',
-                  fontSize: 11,
+                  fontSize: 'var(--text-sm)',
                   color: activePalette === p.id ? '#d4a04a' : '#e0e0e0',
                 }}
                 onMouseEnter={e => { if (activePalette !== p.id) (e.target as HTMLElement).style.background = 'rgba(255,255,255,0.05)'; }}
@@ -617,7 +617,7 @@ export function MarkdownPreview({
                   ))}
                 </span>
                 <span style={{ flex: 1 }}>{p.label}</span>
-                <span style={{ fontSize: 9, color: '#888' }}>{p.category}</span>
+                <span style={{ fontSize: 'var(--text-xs)', color: '#888' }}>{p.category}</span>
               </button>
             ))}
           </div>

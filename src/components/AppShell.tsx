@@ -687,7 +687,7 @@ export default function AppShell() {
             >
               MarkScout
             </h1>
-            <p style={{ fontSize: 14, color: 'var(--text-muted)' }}>
+            <p style={{ fontSize: 'var(--text-base)', color: 'var(--text-muted)' }}>
               A local markdown file viewer
             </p>
           </div>
@@ -697,7 +697,7 @@ export default function AppShell() {
             <p
               style={{
                 fontFamily: 'var(--font-ui)',
-                fontSize: 11,
+                fontSize: 'var(--text-sm)',
                 color: 'var(--text-muted)',
                 marginBottom: 10,
                 textAlign: 'center',
@@ -720,7 +720,7 @@ export default function AppShell() {
                     <div className="path-name">{sp.path}</div>
                     <div className="path-desc">{sp.desc}</div>
                   </div>
-                  <span style={{ color: 'var(--text-muted)', fontSize: 14 }}>{'\u203A'}</span>
+                  <span style={{ color: 'var(--text-muted)', fontSize: 'var(--text-base)' }}>{'\u203A'}</span>
                 </button>
               ))}
             </div>
@@ -729,7 +729,7 @@ export default function AppShell() {
           {/* Instruction text */}
           <p
             style={{
-              fontSize: 11,
+              fontSize: 'var(--text-sm)',
               color: 'var(--text-muted)',
               textAlign: 'center',
               marginBottom: 14,
@@ -747,7 +747,7 @@ export default function AppShell() {
                 background: '#d4a04a',
                 color: '#0d0d0d',
                 fontFamily: 'var(--font-ui)',
-                fontSize: 13,
+                fontSize: 'var(--text-sm)',
                 fontWeight: 600,
                 border: 'none',
                 cursor: 'pointer',
@@ -769,7 +769,7 @@ export default function AppShell() {
                 background: 'none',
                 border: 'none',
                 cursor: 'pointer',
-                fontSize: 12,
+                fontSize: 'var(--text-sm)',
                 fontFamily: 'var(--font-ui)',
                 textDecoration: 'underline',
                 textUnderlineOffset: 3,
@@ -814,7 +814,7 @@ export default function AppShell() {
             padding: '6px 16px',
             background: 'var(--accent, #d4a04a)',
             color: '#0d0d0d',
-            fontSize: 12,
+            fontSize: 'var(--text-sm)',
             fontFamily: 'var(--font-ui)',
             fontWeight: 500,
           }}
@@ -832,7 +832,7 @@ export default function AppShell() {
               border: '1px solid rgba(0,0,0,0.3)',
               borderRadius: 4,
               padding: '2px 10px',
-              fontSize: 11,
+              fontSize: 'var(--text-sm)',
               cursor: 'pointer',
               fontFamily: 'inherit',
             }}
@@ -846,7 +846,7 @@ export default function AppShell() {
               border: 'none',
               color: '#0d0d0d',
               cursor: 'pointer',
-              fontSize: 14,
+              fontSize: 'var(--text-base)',
               lineHeight: 1,
               padding: '0 4px',
               opacity: 0.6,

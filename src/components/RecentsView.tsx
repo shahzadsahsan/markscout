@@ -112,7 +112,7 @@ export function RecentsView({
                   onClick={() => toggleFolder(group.project)}
                   className="w-full px-3 py-1.5 flex items-center gap-2 text-left"
                   style={{
-                    fontSize: 11,
+                    fontSize: 'var(--text-sm)',
                     fontFamily: 'var(--font-mono)',
                     color: 'var(--text-muted)',
                     borderBottom: '1px solid var(--border)',
@@ -130,10 +130,10 @@ export function RecentsView({
                   onMouseEnter={e => (e.currentTarget.style.color = 'var(--text)')}
                   onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-muted)')}
                 >
-                  <span style={{ fontSize: 9, opacity: 0.6 }}>{isExpanded ? '\u25BE' : '\u25B8'}</span>
+                  <span style={{ fontSize: 'var(--text-xs)', opacity: 0.6 }}>{isExpanded ? '\u25BE' : '\u25B8'}</span>
                   <span>{'\uD83D\uDCC2'}</span>
                   <span style={{ flex: 1 }}>{group.project}</span>
-                  <span style={{ fontSize: 9, opacity: 0.5 }}>{group.files.length}</span>
+                  <span style={{ fontSize: 'var(--text-xs)', opacity: 0.5 }}>{group.files.length}</span>
                 </button>
                 {isExpanded && group.files.map(file => (
                   <FileItem
