@@ -3,7 +3,7 @@ import type { FileContentResponse } from '../lib/types';
 import { api } from '../lib/api';
 
 // Color palette definitions
-export type PaletteId = 'parchment-dusk' | 'deep-ocean' | 'rosewood' | 'terminal-green' | 'warm-paper' | 'nord-frost' | 'monokai' | 'solarized-dark' | 'catppuccin' | 'daylight' | 'sepia-light' | 'arctic';
+export type PaletteId = 'parchment-dusk' | 'deep-ocean' | 'rosewood' | 'terminal-green' | 'warm-paper' | 'nord-frost' | 'monokai' | 'solarized-dark' | 'catppuccin' | 'synthwave' | 'dracula' | 'tokyo-night' | 'daylight' | 'sepia-light' | 'arctic' | 'sakura';
 
 export interface Palette {
   id: PaletteId;
@@ -14,7 +14,7 @@ export interface Palette {
 
 export const PALETTES: Palette[] = [
   {
-    id: 'parchment-dusk', label: 'Parchment Dusk', category: 'Subtle',
+    id: 'parchment-dusk', label: 'Parchment Dusk', category: 'Dark Warm',
     vars: {
       '--prose-h1': '#f5e6c8', '--prose-h2': '#e8d5a3', '--prose-h3': '#d4a8a8',
       '--prose-h4': '#9aad8b', '--prose-h5': '#8a9daa', '--prose-bold': '#f5edd8',
@@ -25,7 +25,7 @@ export const PALETTES: Palette[] = [
     },
   },
   {
-    id: 'deep-ocean', label: 'Deep Ocean', category: 'Codery',
+    id: 'deep-ocean', label: 'Deep Ocean', category: 'Dark Cool',
     vars: {
       '--prose-h1': '#7dd3fc', '--prose-h2': '#67b8f0', '--prose-h3': '#93c5fd',
       '--prose-h4': '#6ee7b7', '--prose-h5': '#a5b4fc', '--prose-bold': '#e0f2fe',
@@ -36,7 +36,7 @@ export const PALETTES: Palette[] = [
     },
   },
   {
-    id: 'rosewood', label: 'Rosewood', category: 'Warm',
+    id: 'rosewood', label: 'Rosewood', category: 'Dark Warm',
     vars: {
       '--prose-h1': '#f0b4b4', '--prose-h2': '#e8a0a0', '--prose-h3': '#dba080',
       '--prose-h4': '#b8c898', '--prose-h5': '#a0a8c0', '--prose-bold': '#f5e0e0',
@@ -47,7 +47,7 @@ export const PALETTES: Palette[] = [
     },
   },
   {
-    id: 'terminal-green', label: 'Terminal', category: 'Codery',
+    id: 'terminal-green', label: 'Terminal', category: 'Dark Vibrant',
     vars: {
       '--prose-h1': '#4ade80', '--prose-h2': '#22c55e', '--prose-h3': '#86efac',
       '--prose-h4': '#a3e635', '--prose-h5': '#34d399', '--prose-bold': '#d9f99d',
@@ -58,7 +58,7 @@ export const PALETTES: Palette[] = [
     },
   },
   {
-    id: 'warm-paper', label: 'Warm Paper', category: 'Minimal',
+    id: 'warm-paper', label: 'Warm Paper', category: 'Dark Warm',
     vars: {
       '--prose-h1': '#c8a878', '--prose-h2': '#b89868', '--prose-h3': '#a88858',
       '--prose-h4': '#988060', '--prose-h5': '#887860', '--prose-bold': '#d8c8a8',
@@ -69,7 +69,7 @@ export const PALETTES: Palette[] = [
     },
   },
   {
-    id: 'nord-frost', label: 'Nord Frost', category: 'Subtle',
+    id: 'nord-frost', label: 'Nord Frost', category: 'Dark Cool',
     vars: {
       '--prose-h1': '#88c0d0', '--prose-h2': '#81a1c1', '--prose-h3': '#5e81ac',
       '--prose-h4': '#a3be8c', '--prose-h5': '#b48ead', '--prose-bold': '#eceff4',
@@ -80,7 +80,7 @@ export const PALETTES: Palette[] = [
     },
   },
   {
-    id: 'monokai', label: 'Monokai', category: 'Codery',
+    id: 'monokai', label: 'Monokai', category: 'Dark Vibrant',
     vars: {
       '--prose-h1': '#f92672', '--prose-h2': '#fd971f', '--prose-h3': '#e6db74',
       '--prose-h4': '#a6e22e', '--prose-h5': '#66d9ef', '--prose-bold': '#f8f8f2',
@@ -91,7 +91,7 @@ export const PALETTES: Palette[] = [
     },
   },
   {
-    id: 'solarized-dark', label: 'Solarized', category: 'Subtle',
+    id: 'solarized-dark', label: 'Solarized', category: 'Dark Cool',
     vars: {
       '--prose-h1': '#b58900', '--prose-h2': '#cb4b16', '--prose-h3': '#d33682',
       '--prose-h4': '#859900', '--prose-h5': '#268bd2', '--prose-bold': '#eee8d5',
@@ -102,7 +102,7 @@ export const PALETTES: Palette[] = [
     },
   },
   {
-    id: 'catppuccin', label: 'Catppuccin', category: 'Fun',
+    id: 'catppuccin', label: 'Catppuccin', category: 'Dark Vibrant',
     vars: {
       '--prose-h1': '#f5c2e7', '--prose-h2': '#cba6f7', '--prose-h3': '#f38ba8',
       '--prose-h4': '#a6e3a1', '--prose-h5': '#89b4fa', '--prose-bold': '#cdd6f4',
@@ -110,6 +110,39 @@ export const PALETTES: Palette[] = [
       '--prose-list-marker': '#cba6f7', '--prose-th': '#b8a0d8',
       '--text': '#cdd6f4', '--bg': '#121020',
       '--code-bg': '#16142a', '--border': '#2e2a48', '--surface': '#1a1830',
+    },
+  },
+  {
+    id: 'synthwave', label: 'Synthwave', category: 'Dark Vibrant',
+    vars: {
+      '--prose-h1': '#ff2975', '--prose-h2': '#f97316', '--prose-h3': '#00e5ff',
+      '--prose-h4': '#fde047', '--prose-h5': '#c084fc', '--prose-bold': '#f0d0ff',
+      '--prose-italic': '#ff79c6', '--prose-code': '#00e5ff', '--prose-blockquote': '#6b4c8a',
+      '--prose-list-marker': '#ff2975', '--prose-th': '#c060e0',
+      '--text': '#e0d0f0', '--bg': '#0a0014',
+      '--code-bg': '#0e0020', '--border': '#2a1848', '--surface': '#120028',
+    },
+  },
+  {
+    id: 'dracula', label: 'Dracula', category: 'Dark Cool',
+    vars: {
+      '--prose-h1': '#ff79c6', '--prose-h2': '#bd93f9', '--prose-h3': '#8be9fd',
+      '--prose-h4': '#50fa7b', '--prose-h5': '#ffb86c', '--prose-bold': '#f8f8f2',
+      '--prose-italic': '#ff79c6', '--prose-code': '#50fa7b', '--prose-blockquote': '#6272a4',
+      '--prose-list-marker': '#bd93f9', '--prose-th': '#9580c8',
+      '--text': '#f8f8f2', '--bg': '#0d1117',
+      '--code-bg': '#111822', '--border': '#2a3040', '--surface': '#141c28',
+    },
+  },
+  {
+    id: 'tokyo-night', label: 'Tokyo Night', category: 'Dark Cool',
+    vars: {
+      '--prose-h1': '#7aa2f7', '--prose-h2': '#bb9af7', '--prose-h3': '#7dcfff',
+      '--prose-h4': '#9ece6a', '--prose-h5': '#e0af68', '--prose-bold': '#c0caf5',
+      '--prose-italic': '#bb9af7', '--prose-code': '#9ece6a', '--prose-blockquote': '#565f89',
+      '--prose-list-marker': '#7aa2f7', '--prose-th': '#6a80b8',
+      '--text': '#a9b1d6', '--bg': '#0d1017',
+      '--code-bg': '#111620', '--border': '#1e2438', '--surface': '#131820',
     },
   },
   {
@@ -146,6 +179,18 @@ export const PALETTES: Palette[] = [
       '--text': '#2d3748', '--bg': '#f7fafc',
       '--code-bg': '#edf2f7', '--border': '#cbd5e0', '--surface': '#eef3f8',
       '--text-muted': '#718096', '--accent': '#3182ce', '--active-bg': '#e2e8f0', '--hover-bg': '#f0f5fa',
+    },
+  },
+  {
+    id: 'sakura', label: 'Sakura', category: 'Light',
+    vars: {
+      '--prose-h1': '#8b2252', '--prose-h2': '#6a3d6a', '--prose-h3': '#a0527a',
+      '--prose-h4': '#4a7a5a', '--prose-h5': '#4a6a8a', '--prose-bold': '#3a1a2a',
+      '--prose-italic': '#7a3a6a', '--prose-code': '#d45d79', '--prose-blockquote': '#b89aaa',
+      '--prose-list-marker': '#c86a8a', '--prose-th': '#6a4a5a',
+      '--text': '#3a2030', '--bg': '#fdf2f5',
+      '--code-bg': '#f8e8ee', '--border': '#e8c8d8', '--surface': '#faeef2',
+      '--text-muted': '#9a7a8a', '--accent': '#c86a8a', '--active-bg': '#f0d8e0', '--hover-bg': '#fcf0f4',
     },
   },
 ];
@@ -624,9 +669,15 @@ export function MarkdownPreview({
         onClick={handleContentClick}
       />
 
-      {/* Palette dropdown */}
-      {showPalettePicker && paletteBtnRef.current && (() => {
-        const rect = paletteBtnRef.current!.getBoundingClientRect();
+      {/* Palette dropdown — grouped by tone */}
+      {showPalettePicker && overflowBtnRef.current && (() => {
+        const rect = overflowBtnRef.current!.getBoundingClientRect();
+        const groups: [string, Palette[]][] = [];
+        const seen = new Set<string>();
+        for (const p of PALETTES) {
+          if (!seen.has(p.category)) { seen.add(p.category); groups.push([p.category, []]); }
+          groups.find(g => g[0] === p.category)![1].push(p);
+        }
         return (
           <div
             ref={paletteDropdownRef}
@@ -634,47 +685,65 @@ export function MarkdownPreview({
               position: 'fixed',
               top: rect.bottom + 6,
               right: window.innerWidth - rect.right,
-              width: 220,
+              width: 230,
+              maxHeight: 420,
+              overflowY: 'auto',
               background: 'var(--surface, #161616)',
               border: '1px solid var(--border, #2a2a2a)',
               borderRadius: 8,
-              padding: '6px 0',
+              padding: '4px 0',
               zIndex: 9999,
               boxShadow: '0 8px 24px rgba(0,0,0,0.6)',
             }}
           >
-            {PALETTES.map(p => (
-              <button
-                key={p.id}
-                onClick={() => { onChangePalette(p.id); setShowPalettePicker(false); }}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 8,
-                  width: '100%',
-                  padding: '6px 12px',
-                  border: 'none',
-                  background: activePalette === p.id ? 'rgba(212,160,74,0.15)' : 'transparent',
-                  cursor: 'pointer',
-                  textAlign: 'left',
+            {groups.map(([category, palettes], gi) => (
+              <div key={category}>
+                {gi > 0 && <div style={{ height: 1, background: 'var(--border)', margin: '4px 0' }} />}
+                <div style={{
+                  padding: '4px 12px 2px',
+                  fontSize: 'var(--text-xs)',
                   fontFamily: 'var(--font-ui)',
-                  fontSize: 'var(--text-sm)',
-                  color: activePalette === p.id ? '#d4a04a' : '#e0e0e0',
-                }}
-                onMouseEnter={e => { if (activePalette !== p.id) (e.target as HTMLElement).style.background = 'rgba(255,255,255,0.05)'; }}
-                onMouseLeave={e => { if (activePalette !== p.id) (e.target as HTMLElement).style.background = 'transparent'; }}
-              >
-                <span style={{ display: 'flex', gap: 2, flexShrink: 0 }}>
-                  {['--prose-h1', '--prose-h3', '--prose-code', '--prose-bold'].map(k => (
-                    <span
-                      key={k}
-                      style={{ width: 8, height: 8, borderRadius: 2, background: p.vars[k] }}
-                    />
-                  ))}
-                </span>
-                <span style={{ flex: 1 }}>{p.label}</span>
-                <span style={{ fontSize: 'var(--text-xs)', color: '#888' }}>{p.category}</span>
-              </button>
+                  color: 'var(--text-muted)',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.05em',
+                  fontWeight: 600,
+                }}>
+                  {category}
+                </div>
+                {palettes.map(p => (
+                  <button
+                    key={p.id}
+                    onClick={() => { onChangePalette(p.id); setShowPalettePicker(false); }}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 8,
+                      width: '100%',
+                      padding: '5px 12px',
+                      border: 'none',
+                      background: activePalette === p.id ? 'rgba(212,160,74,0.15)' : 'transparent',
+                      cursor: 'pointer',
+                      textAlign: 'left',
+                      fontFamily: 'var(--font-ui)',
+                      fontSize: 'var(--text-sm)',
+                      color: activePalette === p.id ? '#d4a04a' : '#e0e0e0',
+                    }}
+                    onMouseEnter={e => { if (activePalette !== p.id) (e.target as HTMLElement).style.background = 'rgba(255,255,255,0.05)'; }}
+                    onMouseLeave={e => { if (activePalette !== p.id) (e.target as HTMLElement).style.background = 'transparent'; }}
+                  >
+                    <span style={{ display: 'flex', gap: 2, flexShrink: 0 }}>
+                      {['--prose-h1', '--prose-h3', '--prose-code', '--prose-bold'].map(k => (
+                        <span
+                          key={k}
+                          style={{ width: 8, height: 8, borderRadius: 2, background: p.vars[k] }}
+                        />
+                      ))}
+                    </span>
+                    <span style={{ flex: 1 }}>{p.label}</span>
+                    {activePalette === p.id && <span style={{ fontSize: 'var(--text-xs)' }}>{'\u2713'}</span>}
+                  </button>
+                ))}
+              </div>
             ))}
           </div>
         );
