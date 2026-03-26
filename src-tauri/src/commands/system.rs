@@ -1,5 +1,5 @@
 // MarkScout — System Commands
-// reveal_in_finder, open_external, check_for_update
+// reveal_in_finder, open_external, check_for_update, write_crash_log
 
 use std::path::Path;
 
@@ -50,6 +50,30 @@ pub async fn open_external(url: String) -> Result<(), String> {
         .spawn()
         .map_err(|e| format!("Failed to open URL: {}", e))?;
 
+    Ok(())
+}
+
+// ---------------------------------------------------------------------------
+// write_crash_log — append diagnostic entries to ~/.markscout/crash.log
+// ---------------------------------------------------------------------------
+
+#[tauri::command]
+pub async fn write_crash_log(entry: String) -> Result<(), String> {
+    use std::io::Write;
+    let log_path = dirs::home_dir()
+        .unwrap_or_default()
+        .join(".markscout")
+        .join("crash.log");
+    if let Some(parent) = log_path.parent() {
+        let _ = std::fs::create_dir_all(parent);
+    }
+    let mut file = std::fs::OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(&log_path)
+        .map_err(|e| format!("Failed to open crash log: {}", e))?;
+    writeln!(file, "{}", entry)
+        .map_err(|e| format!("Failed to write crash log: {}", e))?;
     Ok(())
 }
 

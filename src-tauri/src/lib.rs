@@ -250,6 +250,7 @@ pub fn run() {
             commands::system::reveal_in_finder,
             commands::system::check_for_update,
             commands::system::open_external,
+            commands::system::write_crash_log,
             commands::session::get_whats_new,
             commands::session::record_session_start,
             commands::collections::get_collections,

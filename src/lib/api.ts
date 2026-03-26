@@ -141,6 +141,9 @@ export const api = {
   openExternal: (url: string) =>
     invoke<void>('open_external', { url }),
 
+  writeCrashLog: (entry: string) =>
+    invoke<void>('write_crash_log', { entry }),
+
   // --- v0.5: Session Intelligence ---
   getWhatsNew: () =>
     invoke<WhatsNewResponse>('get_whats_new'),

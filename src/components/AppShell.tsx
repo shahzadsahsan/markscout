@@ -88,14 +88,8 @@ export default function AppShell() {
     const log = (msg: string) => {
       const entry = `[${new Date().toISOString()}] ${msg}`;
       console.log(`[MarkScout] ${entry}`);
-      try {
-        const key = 'markscout-diagnostic-log';
-        const prev = localStorage.getItem(key) || '';
-        // Keep last 100 lines
-        const lines = prev.split('\n').filter(Boolean).slice(-99);
-        lines.push(entry);
-        localStorage.setItem(key, lines.join('\n'));
-      } catch { /* storage full — ignore */ }
+      // Write to ~/.markscout/crash.log via Tauri command
+      api.writeCrashLog(entry).catch(() => {});
     };
 
     log(`App mounted, v0.6.0, document.hidden=${document.hidden}`);
