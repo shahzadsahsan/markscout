@@ -573,9 +573,21 @@ export function MarkdownPreview({
             {/* Compact zoom */}
             <div className="zoom-controls">
               <button className="zoom-btn" onClick={onZoomOut} title="Zoom out (Cmd+-)">A{'\u2212'}</button>
-              <button className="zoom-label" onClick={onZoomReset} title="Reset zoom (Cmd+0)">{zoomLabel}</button>
               <button className="zoom-btn" onClick={onZoomIn} title="Zoom in (Cmd+=)">A+</button>
             </div>
+
+            {/* Copy file contents */}
+            <button
+              className="zoom-btn"
+              onClick={() => {
+                if (fileContent?.content) {
+                  navigator.clipboard.writeText(fileContent.content);
+                }
+              }}
+              title="Copy file contents"
+            >
+              {'\u2398'}
+            </button>
 
             {/* Fill screen */}
             <button
