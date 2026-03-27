@@ -692,7 +692,7 @@ export default function AppShell() {
           const list = filteredFiles;
           if (list.length === 0) break;
           const currentIdx = selectedPath ? list.findIndex(f => f.path === selectedPath) : -1;
-          const down = e.key === 'k' || e.key === 'ArrowDown';
+          const down = e.key === 'j' || e.key === 'ArrowDown';
           const nextIdx = down
             ? Math.min(currentIdx + 1, list.length - 1)
             : Math.max(currentIdx - 1, 0);
