@@ -8,6 +8,7 @@ interface RecentsViewProps {
   onSelectFile: (path: string) => void;
   onToggleStar: (path: string) => void;
   favorites: Set<string>;
+  viewCounts?: Map<string, number>;
 }
 
 type TimeFilter = 'all' | '1h' | '3h' | '24h';
@@ -25,10 +26,12 @@ export function RecentsView({
   onSelectFile,
   onToggleStar,
   favorites,
+  viewCounts,
 }: RecentsViewProps) {
   const [timeFilter, setTimeFilter] = useState<TimeFilter>('all');
   const [groupByFolder, setGroupByFolder] = useState(() => localStorage.getItem('markscout-recents-grouped') === 'true');
   const [showFolderColors, setShowFolderColors] = useState(() => localStorage.getItem('markscout-folder-colors') !== 'false');
+  const [sortByViews, setSortByViews] = useState(false);
   // Default all folders to collapsed
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
 
@@ -42,11 +45,18 @@ export function RecentsView({
   }, []);
 
   const filteredFiles = useMemo(() => {
-    if (timeFilter === 'all') return files;
-    const threshold = TIME_FILTERS.find(f => f.key === timeFilter)!.ms;
-    const cutoff = Date.now() - threshold;
-    return files.filter(f => f.modifiedAt >= cutoff);
-  }, [files, timeFilter]);
+    let result = files;
+    if (timeFilter !== 'all') {
+      const threshold = TIME_FILTERS.find(f => f.key === timeFilter)!.ms;
+      const cutoff = Date.now() - threshold;
+      result = result.filter(f => f.modifiedAt >= cutoff);
+    }
+    // "Most viewed" sort only applies when "All" is selected
+    if (sortByViews && timeFilter === 'all' && viewCounts && viewCounts.size > 0) {
+      result = [...result].sort((a, b) => (viewCounts.get(b.path) ?? 0) - (viewCounts.get(a.path) ?? 0));
+    }
+    return result;
+  }, [files, timeFilter, sortByViews, viewCounts]);
 
   const groupedFiles = useMemo(() => {
     if (!groupByFolder) return null;
@@ -78,6 +88,16 @@ export function RecentsView({
           </button>
         ))}
         <div style={{ flex: 1 }} />
+        {timeFilter === 'all' && (
+          <button
+            className={`filter-pill ${sortByViews ? 'active' : ''}`}
+            onClick={() => setSortByViews(p => !p)}
+            title="Sort by most viewed (only in All view)"
+            style={{ display: 'flex', alignItems: 'center', gap: 3 }}
+          >
+            <span>{sortByViews ? 'Views' : 'Recent'}</span>
+          </button>
+        )}
         <button
           className={`filter-pill ${showFolderColors ? 'active' : ''}`}
           onClick={() => {

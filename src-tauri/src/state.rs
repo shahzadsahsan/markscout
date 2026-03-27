@@ -185,16 +185,23 @@ impl AppStateManager {
     ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         let mut state = self.state.lock().await;
 
+        // Find existing entry to carry forward view_count
+        let prev_count = state.history.iter()
+            .find(|h| h.path == path)
+            .map(|h| h.view_count)
+            .unwrap_or(0);
+
         // Remove existing entry for this path
         state.history.retain(|h| h.path != path);
 
-        // Add at beginning
+        // Add at beginning with incremented count
         state.history.insert(
             0,
             HistoryEntry {
                 path: path.to_string(),
                 content_hash: content_hash.to_string(),
                 last_opened_at: now_millis(),
+                view_count: prev_count + 1,
             },
         );
 

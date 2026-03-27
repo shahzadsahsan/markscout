@@ -65,7 +65,11 @@ pub struct HistoryEntry {
     pub path: String,
     pub content_hash: String,
     pub last_opened_at: u64,
+    #[serde(default = "default_view_count")]
+    pub view_count: u32,
 }
+
+fn default_view_count() -> u32 { 1 }
 
 // --- Filter Config ---
 

@@ -23,6 +23,7 @@ export interface HistoryEntry {
   path: string;
   contentHash: string;
   lastOpenedAt: number;   // Epoch ms
+  viewCount?: number;     // v0.7: how many times opened
 }
 
 export interface FilterConfig {

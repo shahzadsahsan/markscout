@@ -57,6 +57,7 @@ interface SidebarProps {
   searchResults: SearchResult[] | null;
   searchLoading: boolean;
   onOpenPreferences: () => void;
+  viewCounts?: Map<string, number>;
 }
 
 const TABS: { view: SidebarView; icon: string; label: string; shortcut: string }[] = [
@@ -100,6 +101,7 @@ export function Sidebar({
   searchResults,
   searchLoading,
   onOpenPreferences,
+  viewCounts,
 }: SidebarProps) {
   const [recentSearches, setRecentSearches] = useState<string[]>(() => getRecentSearches());
   const [showRecents, setShowRecents] = useState(false);
@@ -322,6 +324,7 @@ export function Sidebar({
                   onSelectFile={onSelectFile}
                   onToggleStar={onToggleStar}
                   favorites={favorites}
+                  viewCounts={viewCounts}
                 />
               )}
               {view === 'favorites' && (
