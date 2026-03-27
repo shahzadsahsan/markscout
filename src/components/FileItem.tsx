@@ -1,6 +1,30 @@
 import { memo } from 'react';
 import type { FileEntry } from '../lib/types';
 
+// 12 muted, distinct hues for folder color indicators
+const PROJECT_COLORS = [
+  '#6b8e8e', // teal
+  '#8e7b6b', // warm brown
+  '#7b6b8e', // muted purple
+  '#6b8e6b', // sage green
+  '#8e6b7b', // dusty rose
+  '#6b7b8e', // slate blue
+  '#8e8e6b', // olive
+  '#8e6b6b', // terra cotta
+  '#6b8e7b', // sea foam
+  '#7b8e6b', // moss
+  '#6b6b8e', // periwinkle
+  '#8e7b8e', // mauve
+];
+
+function projectColorHash(project: string): string {
+  let hash = 0;
+  for (let i = 0; i < project.length; i++) {
+    hash = ((hash << 5) - hash + project.charCodeAt(i)) | 0;
+  }
+  return PROJECT_COLORS[Math.abs(hash) % PROJECT_COLORS.length];
+}
+
 interface FileItemProps {
   file: FileEntry;
   selected: boolean;
@@ -16,6 +40,7 @@ interface FileItemProps {
   matchCount?: number;   // Number of matches in file
   badge?: 'new' | 'updated' | null; // v0.5: change badge
   stalenessOpacity?: number; // v0.5: staleness visual indicator (0-1)
+  showFolderColor?: boolean; // v0.7: 2px colored left border by project
 }
 
 function formatRelativeTime(epochMs: number): string {
@@ -90,6 +115,7 @@ export const FileItem = memo(function FileItem({
   matchCount,
   badge,
   stalenessOpacity,
+  showFolderColor,
 }: FileItemProps) {
   const timestamp = timeField || file.modifiedAt;
   const label = timeLabel || '';
@@ -102,6 +128,7 @@ export const FileItem = memo(function FileItem({
       style={{
         ...(indentPx !== undefined ? { paddingLeft: `${indentPx}px` } : {}),
         ...(stalenessOpacity !== undefined && stalenessOpacity < 1 ? { opacity: stalenessOpacity } : {}),
+        ...(showFolderColor ? { borderLeft: `2px solid ${projectColorHash(file.project)}` } : {}),
       }}
     >
       <div className="flex items-start justify-between gap-2">

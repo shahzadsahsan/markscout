@@ -28,6 +28,7 @@ export function RecentsView({
 }: RecentsViewProps) {
   const [timeFilter, setTimeFilter] = useState<TimeFilter>('all');
   const [groupByFolder, setGroupByFolder] = useState(() => localStorage.getItem('markscout-recents-grouped') === 'true');
+  const [showFolderColors, setShowFolderColors] = useState(() => localStorage.getItem('markscout-folder-colors') !== 'false');
   // Default all folders to collapsed
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
 
@@ -77,6 +78,20 @@ export function RecentsView({
           </button>
         ))}
         <div style={{ flex: 1 }} />
+        <button
+          className={`filter-pill ${showFolderColors ? 'active' : ''}`}
+          onClick={() => {
+            setShowFolderColors(prev => {
+              const next = !prev;
+              localStorage.setItem('markscout-folder-colors', String(next));
+              return next;
+            });
+          }}
+          title="Toggle folder color indicators"
+          style={{ display: 'flex', alignItems: 'center', gap: 3, fontSize: 'var(--text-xs)' }}
+        >
+          <span style={{ width: 8, height: 8, borderRadius: 2, background: showFolderColors ? '#6b8e8e' : 'var(--text-muted)', opacity: showFolderColors ? 1 : 0.4 }} />
+        </button>
         <button
           className={`filter-pill ${groupByFolder ? 'active' : ''}`}
           onClick={() => {
@@ -145,6 +160,7 @@ export function RecentsView({
                     onSelect={onSelectFile}
                     onToggleStar={onToggleStar}
                     stalenessOpacity={getStalenessOpacity(file.modifiedAt)}
+                    showFolderColor={showFolderColors}
                   />
                 ))}
               </div>
@@ -162,6 +178,7 @@ export function RecentsView({
               onSelect={onSelectFile}
               onToggleStar={onToggleStar}
               stalenessOpacity={getStalenessOpacity(file.modifiedAt)}
+              showFolderColor={showFolderColors}
             />
           ))}
         </div>
