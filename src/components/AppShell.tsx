@@ -510,7 +510,8 @@ export default function AppShell() {
 
         switch (payload.type) {
           case 'file-added': {
-            const entry = payload.data as FileEntry;
+            const entry = payload.data as FileEntry | undefined;
+            if (!entry?.path) break;
             if (scanComplete) {
               setFiles(prev => {
                 const filtered = prev.filter(f => f?.path !== entry.path);
@@ -529,7 +530,8 @@ export default function AppShell() {
           }
 
           case 'file-changed': {
-            const entry = payload.data as FileEntry;
+            const entry = payload.data as FileEntry | undefined;
+            if (!entry?.path) break;
             setFiles(prev => prev.map(f => f?.path === entry.path ? entry : f));
             contentCacheRef.current.delete(entry.path);
             // Re-fetch if currently viewing this file
@@ -540,8 +542,9 @@ export default function AppShell() {
           }
 
           case 'file-removed': {
-            const { path } = payload.data as { path: string };
-            setFiles(prev => prev.filter(f => f?.path !== path));
+            const data = payload.data as { path: string } | undefined;
+            if (!data?.path) break;
+            setFiles(prev => prev.filter(f => f?.path !== data.path));
             setTotalFiles(prev => Math.max(0, prev - 1));
             break;
           }
