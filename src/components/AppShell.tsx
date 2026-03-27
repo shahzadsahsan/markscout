@@ -200,11 +200,13 @@ export default function AppShell() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // --- Check for updates on mount ---
+  // --- Check for updates on mount (skip dismissed versions) ---
   useEffect(() => {
     api.checkForUpdate()
       .then(result => {
         if (result.hasUpdate) {
+          const dismissed = localStorage.getItem('markscout-dismissed-update');
+          if (dismissed === result.latestVersion) return;
           setUpdateInfo({
             latestVersion: result.latestVersion,
             downloadUrl: result.downloadUrl,
@@ -925,23 +927,28 @@ export default function AppShell() {
 
   return (
     <div className="flex flex-col h-screen overflow-hidden" style={paletteStyle}>
-      {/* Update notification banner */}
+      {/* Update notification banner — sticky, dismissible per version */}
       {updateInfo && (
         <div
           style={{
+            position: 'sticky',
+            top: 0,
+            zIndex: 100,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             gap: 12,
-            padding: '6px 16px',
-            background: 'var(--accent, #d4a04a)',
+            padding: '8px 16px',
+            background: 'linear-gradient(135deg, #d4a04a 0%, #c89030 100%)',
             color: '#0d0d0d',
             fontSize: 'var(--text-sm)',
             fontFamily: 'var(--font-ui)',
-            fontWeight: 500,
+            fontWeight: 600,
+            boxShadow: '0 2px 8px rgba(212,160,74,0.3)',
           }}
         >
-          <span>MarkScout v{updateInfo.latestVersion} available</span>
+          <span style={{ fontSize: 'var(--text-base)' }}>{'\u2191'}</span>
+          <span>MarkScout v{updateInfo.latestVersion} is available</span>
           <button
             onClick={() => {
               api.openExternal(updateInfo.downloadUrl).catch(() => {
@@ -949,20 +956,24 @@ export default function AppShell() {
               });
             }}
             style={{
-              background: 'none',
+              background: 'rgba(0,0,0,0.15)',
               color: '#0d0d0d',
-              border: '1px solid rgba(0,0,0,0.3)',
-              borderRadius: 4,
-              padding: '2px 10px',
+              border: '1px solid rgba(0,0,0,0.2)',
+              borderRadius: 6,
+              padding: '3px 12px',
               fontSize: 'var(--text-sm)',
               cursor: 'pointer',
               fontFamily: 'inherit',
+              fontWeight: 600,
             }}
           >
-            Release Notes
+            Download
           </button>
           <button
-            onClick={() => setUpdateInfo(null)}
+            onClick={() => {
+              localStorage.setItem('markscout-dismissed-update', updateInfo.latestVersion);
+              setUpdateInfo(null);
+            }}
             style={{
               background: 'none',
               border: 'none',
@@ -971,9 +982,9 @@ export default function AppShell() {
               fontSize: 'var(--text-base)',
               lineHeight: 1,
               padding: '0 4px',
-              opacity: 0.6,
+              opacity: 0.5,
             }}
-            title="Dismiss"
+            title="Dismiss for this version"
           >
             {'\u2715'}
           </button>
