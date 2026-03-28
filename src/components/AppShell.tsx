@@ -40,6 +40,7 @@ export default function AppShell() {
 
   // Refs
   const contentCacheRef = useRef<Map<string, FileContentResponse>>(new Map());
+  const scrollPositionsRef = useRef<Map<string, number>>(new Map());
   const pendingFilesRef = useRef<FileEntry[]>([]);
   const batchTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const mountedRef = useRef(true);
@@ -168,6 +169,9 @@ export default function AppShell() {
         if (data.zoomLevel !== undefined) setZoomLevel(data.zoomLevel);
         if (data.fillScreen !== undefined) setFillScreen(data.fillScreen);
         if (data.contentSearch !== undefined) setContentSearch(data.contentSearch);
+        if (data.scrollPositions) {
+          scrollPositionsRef.current = new Map(Object.entries(data.scrollPositions));
+        }
         if (data.favoriteFolders) {
           setFavoriteFolders(new Set(data.favoriteFolders));
         }
@@ -186,11 +190,13 @@ export default function AppShell() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // --- Check for updates on mount ---
+  // --- Check for updates on mount (skip dismissed versions) ---
   useEffect(() => {
     api.checkForUpdate()
       .then(result => {
         if (result.hasUpdate) {
+          const dismissed = localStorage.getItem('markscout-dismissed-update');
+          if (dismissed === result.latestVersion) return;
           setUpdateInfo({
             latestVersion: result.latestVersion,
             downloadUrl: result.downloadUrl,
@@ -204,6 +210,21 @@ export default function AppShell() {
   useEffect(() => {
     api.recordSessionStart().catch(() => {});
   }, []);
+
+  // --- Persist scroll positions on unload ---
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      // Save current scroll position
+      if (selectedPath && mainRef.current) {
+        scrollPositionsRef.current.set(selectedPath, mainRef.current.scrollTop);
+      }
+      const obj: Record<string, number> = {};
+      scrollPositionsRef.current.forEach((v, k) => { obj[k] = v; });
+      api.saveUiState({ scrollPositions: obj }).catch(() => {});
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [selectedPath]);
 
   // (folder-dropped listener is below, after addWatchDir is defined)
 
@@ -335,6 +356,7 @@ export default function AppShell() {
       // Record history + persist selected path (fire-and-forget)
       api.recordHistory(filePath, data.contentHash || '').catch(() => {});
       api.saveUiState({ lastSelectedPath: filePath }).catch(() => {});
+
     } catch {
       // silent
     } finally {
@@ -343,11 +365,24 @@ export default function AppShell() {
     }
   }, []);
 
+  // --- Save current scroll position before navigating ---
+  const saveCurrentScroll = useCallback(() => {
+    if (selectedPath && mainRef.current) {
+      scrollPositionsRef.current.set(selectedPath, mainRef.current.scrollTop);
+      // Cap at 200
+      if (scrollPositionsRef.current.size > 200) {
+        const firstKey = scrollPositionsRef.current.keys().next().value;
+        if (firstKey) scrollPositionsRef.current.delete(firstKey);
+      }
+    }
+  }, [selectedPath]);
+
   // --- Select a file ---
   const selectFile = useCallback((filePath: string) => {
+    saveCurrentScroll();
     setSelectedPath(filePath);
     fetchFileContent(filePath);
-  }, [fetchFileContent]);
+  }, [fetchFileContent, saveCurrentScroll]);
 
   // --- Toggle star ---
   const toggleStar = useCallback(async (filePath: string) => {
@@ -512,19 +547,12 @@ export default function AppShell() {
           case 'file-added': {
             const entry = payload.data as FileEntry | undefined;
             if (!entry?.path) break;
-            if (scanComplete) {
-              setFiles(prev => {
-                const filtered = prev.filter(f => f?.path !== entry.path);
-                return [entry, ...filtered].sort((a, b) => b.modifiedAt - a.modifiedAt);
-              });
-              setTotalFiles(prev => prev + 1);
-            } else {
-              pendingFilesRef.current.push(entry);
-              if (!batchTimerRef.current) {
-                batchTimerRef.current = setInterval(() => {
-                  flushPendingFiles();
-                }, 500);
-              }
+            // Always batch — even after scan-complete — to avoid per-event re-renders
+            pendingFilesRef.current.push(entry);
+            if (!batchTimerRef.current) {
+              batchTimerRef.current = setInterval(() => {
+                flushPendingFiles();
+              }, 500);
             }
             break;
           }
@@ -532,9 +560,15 @@ export default function AppShell() {
           case 'file-changed': {
             const entry = payload.data as FileEntry | undefined;
             if (!entry?.path) break;
-            setFiles(prev => prev.map(f => f?.path === entry.path ? entry : f));
+            // Batch changes too — they'll be merged in flushPendingFiles
+            pendingFilesRef.current.push(entry);
+            if (!batchTimerRef.current) {
+              batchTimerRef.current = setInterval(() => {
+                flushPendingFiles();
+              }, 500);
+            }
             contentCacheRef.current.delete(entry.path);
-            // Re-fetch if currently viewing this file
+            // Re-fetch if currently viewing this file (immediate, not batched)
             if (entry.path === selectedPath) {
               fetchFileContent(entry.path);
             }
@@ -551,11 +585,13 @@ export default function AppShell() {
 
           case 'scan-complete': {
             const data = payload.data as { totalFiles: number; filteredCount: number };
+            // Flush remaining pending files from scan
+            flushPendingFiles();
+            // Clear batch timer — it will be re-created for post-scan events
             if (batchTimerRef.current) {
               clearInterval(batchTimerRef.current);
               batchTimerRef.current = null;
             }
-            flushPendingFiles();
             setTotalFiles(data.totalFiles);
             setFilteredCount(data.filteredCount);
             setScanComplete(true);
@@ -692,7 +728,7 @@ export default function AppShell() {
           const list = filteredFiles;
           if (list.length === 0) break;
           const currentIdx = selectedPath ? list.findIndex(f => f.path === selectedPath) : -1;
-          const down = e.key === 'k' || e.key === 'ArrowDown';
+          const down = e.key === 'j' || e.key === 'ArrowDown';
           const nextIdx = down
             ? Math.min(currentIdx + 1, list.length - 1)
             : Math.max(currentIdx - 1, 0);
@@ -876,23 +912,28 @@ export default function AppShell() {
 
   return (
     <div className="flex flex-col h-screen overflow-hidden" style={paletteStyle}>
-      {/* Update notification banner */}
+      {/* Update notification banner — sticky, dismissible per version */}
       {updateInfo && (
         <div
           style={{
+            position: 'sticky',
+            top: 0,
+            zIndex: 100,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             gap: 12,
-            padding: '6px 16px',
-            background: 'var(--accent, #d4a04a)',
+            padding: '8px 16px',
+            background: 'linear-gradient(135deg, #d4a04a 0%, #c89030 100%)',
             color: '#0d0d0d',
             fontSize: 'var(--text-sm)',
             fontFamily: 'var(--font-ui)',
-            fontWeight: 500,
+            fontWeight: 600,
+            boxShadow: '0 2px 8px rgba(212,160,74,0.3)',
           }}
         >
-          <span>MarkScout v{updateInfo.latestVersion} available</span>
+          <span style={{ fontSize: 'var(--text-base)' }}>{'\u2191'}</span>
+          <span>MarkScout v{updateInfo.latestVersion} is available</span>
           <button
             onClick={() => {
               api.openExternal(updateInfo.downloadUrl).catch(() => {
@@ -900,20 +941,24 @@ export default function AppShell() {
               });
             }}
             style={{
-              background: 'none',
+              background: 'rgba(0,0,0,0.15)',
               color: '#0d0d0d',
-              border: '1px solid rgba(0,0,0,0.3)',
-              borderRadius: 4,
-              padding: '2px 10px',
+              border: '1px solid rgba(0,0,0,0.2)',
+              borderRadius: 6,
+              padding: '3px 12px',
               fontSize: 'var(--text-sm)',
               cursor: 'pointer',
               fontFamily: 'inherit',
+              fontWeight: 600,
             }}
           >
-            Release Notes
+            Download
           </button>
           <button
-            onClick={() => setUpdateInfo(null)}
+            onClick={() => {
+              localStorage.setItem('markscout-dismissed-update', updateInfo.latestVersion);
+              setUpdateInfo(null);
+            }}
             style={{
               background: 'none',
               border: 'none',
@@ -922,9 +967,9 @@ export default function AppShell() {
               fontSize: 'var(--text-base)',
               lineHeight: 1,
               padding: '0 4px',
-              opacity: 0.6,
+              opacity: 0.5,
             }}
-            title="Dismiss"
+            title="Dismiss for this version"
           >
             {'\u2715'}
           </button>
@@ -981,6 +1026,9 @@ export default function AppShell() {
             activePalette={activePalette}
             onChangePalette={changePalette}
             onOpenPreferences={() => setPrefsOpen(true)}
+            scrollContainerRef={mainRef}
+            savedScrollTop={fileContent?.path ? scrollPositionsRef.current.get(fileContent.path) : undefined}
+            allFiles={safeFiles}
           />
         </main>
       </div>

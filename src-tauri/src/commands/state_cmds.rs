@@ -1,5 +1,6 @@
 // Stub — will be implemented later
 
+use std::collections::HashMap;
 use tauri::State;
 use crate::state::AppStateManager;
 use crate::types::{UiStateResponse, SidebarView};
@@ -22,6 +23,7 @@ pub async fn get_ui_state(
         favorites: app_state.favorites,
         favorite_folders: app_state.favorite_folders,
         history: app_state.history,
+        scroll_positions: app_state.ui.scroll_positions,
     })
 }
 
@@ -37,6 +39,7 @@ pub async fn save_ui_state(
     zoom_level: Option<f64>,
     fill_screen: Option<bool>,
     content_search: Option<bool>,
+    scroll_positions: Option<HashMap<String, f64>>,
 ) -> Result<(), String> {
     if let Some(v) = sidebar_view {
         state.save_sidebar_view(v).await.map_err(|e| e.to_string())?;
@@ -64,6 +67,9 @@ pub async fn save_ui_state(
     }
     if let Some(c) = content_search {
         state.save_content_search(c).await.map_err(|e| e.to_string())?;
+    }
+    if let Some(sp) = scroll_positions {
+        state.save_scroll_positions(sp).await.map_err(|e| e.to_string())?;
     }
     Ok(())
 }

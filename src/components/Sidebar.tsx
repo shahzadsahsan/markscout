@@ -1,8 +1,38 @@
+import { useState, useCallback, useEffect, useRef } from 'react';
 import type { FileEntry, SidebarView, FolderNode, SearchResult } from '../lib/types';
 import { RecentsView } from './RecentsView';
 import { FavoritesView } from './FavoritesView';
 import { FileItem } from './FileItem';
 import type { RefObject } from 'react';
+
+const RECENT_SEARCHES_KEY = 'markscout-recent-searches';
+const MAX_RECENT_SEARCHES = 10;
+
+function getRecentSearches(): string[] {
+  try {
+    const raw = localStorage.getItem(RECENT_SEARCHES_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch { return []; }
+}
+
+function saveRecentSearch(query: string): string[] {
+  const searches = getRecentSearches().filter(s => s !== query);
+  searches.unshift(query);
+  const trimmed = searches.slice(0, MAX_RECENT_SEARCHES);
+  localStorage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(trimmed));
+  return trimmed;
+}
+
+function removeRecentSearch(query: string): string[] {
+  const searches = getRecentSearches().filter(s => s !== query);
+  localStorage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(searches));
+  return searches;
+}
+
+function clearRecentSearches(): string[] {
+  localStorage.removeItem(RECENT_SEARCHES_KEY);
+  return [];
+}
 
 interface SidebarProps {
   view: SidebarView;
@@ -71,6 +101,33 @@ export function Sidebar({
   searchLoading,
   onOpenPreferences,
 }: SidebarProps) {
+  const [recentSearches, setRecentSearches] = useState<string[]>(() => getRecentSearches());
+  const [showRecents, setShowRecents] = useState(false);
+  const searchWrapperRef = useRef<HTMLDivElement>(null);
+
+  // Save search query when user presses Enter or submits a non-empty search
+  const handleSearchKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && searchQuery.trim().length >= 2) {
+      setRecentSearches(saveRecentSearch(searchQuery.trim()));
+      setShowRecents(false);
+    }
+    if (e.key === 'Escape') {
+      setShowRecents(false);
+    }
+  }, [searchQuery]);
+
+  // Close dropdown on click outside
+  useEffect(() => {
+    if (!showRecents) return;
+    const handler = (e: MouseEvent) => {
+      if (searchWrapperRef.current && !searchWrapperRef.current.contains(e.target as Node)) {
+        setShowRecents(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [showRecents]);
+
   return (
     <aside
       className="flex flex-col border-r h-full shrink-0 transition-all duration-200"
@@ -128,13 +185,15 @@ export function Sidebar({
 
       {/* Search bar */}
       {!collapsed && (
-        <div className="px-2 py-1.5 border-b" style={{ borderColor: 'var(--border)' }}>
+        <div ref={searchWrapperRef} className="px-2 py-1.5 border-b" style={{ borderColor: 'var(--border)', position: 'relative' }}>
           <input
             ref={searchInputRef}
             type="text"
             placeholder={contentSearch ? "Search contents... ( / )" : "Filter files... ( / )"}
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
+            onFocus={() => { if (!searchQuery.trim() && recentSearches.length > 0) setShowRecents(true); }}
+            onKeyDown={handleSearchKeyDown}
             className="w-full px-2 py-1 text-xs rounded"
             style={{
               background: 'var(--bg)',
@@ -144,6 +203,68 @@ export function Sidebar({
               outline: 'none',
             }}
           />
+          {/* Recent searches dropdown */}
+          {showRecents && !searchQuery.trim() && recentSearches.length > 0 && (
+            <div
+              style={{
+                position: 'absolute',
+                top: '100%',
+                left: 8,
+                right: 8,
+                zIndex: 100,
+                background: 'var(--surface)',
+                border: '1px solid var(--border)',
+                borderRadius: 6,
+                boxShadow: '0 4px 16px rgba(0,0,0,0.4)',
+                padding: '4px 0',
+                maxHeight: 240,
+                overflowY: 'auto',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '2px 8px 4px' }}>
+                <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)' }}>Recent</span>
+                <button
+                  onClick={() => setRecentSearches(clearRecentSearches())}
+                  style={{
+                    background: 'none', border: 'none', cursor: 'pointer',
+                    fontSize: 'var(--text-xs)', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)',
+                  }}
+                >
+                  Clear all
+                </button>
+              </div>
+              {recentSearches.map(s => (
+                <div
+                  key={s}
+                  style={{
+                    display: 'flex', alignItems: 'center', padding: '3px 8px', gap: 6,
+                    cursor: 'pointer', fontSize: 'var(--text-sm)', fontFamily: 'var(--font-ui)',
+                    color: 'var(--text)',
+                  }}
+                  onMouseEnter={e => (e.currentTarget.style.background = 'var(--hover-bg, rgba(255,255,255,0.05))')}
+                  onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                >
+                  <span
+                    style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+                    onClick={() => { onSearchChange(s); setShowRecents(false); }}
+                  >
+                    {s}
+                  </span>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setRecentSearches(removeRecentSearch(s)); }}
+                    style={{
+                      background: 'none', border: 'none', cursor: 'pointer',
+                      color: 'var(--text-muted)', fontSize: 'var(--text-xs)', padding: '0 2px',
+                      lineHeight: 1, flexShrink: 0,
+                    }}
+                    title="Remove"
+                  >
+                    {'\u2715'}
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
           <label
             className="flex items-center gap-1.5 mt-1 cursor-pointer select-none"
             style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}

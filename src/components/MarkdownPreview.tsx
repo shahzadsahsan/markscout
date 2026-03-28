@@ -277,6 +277,9 @@ interface MarkdownPreviewProps {
   activePalette: PaletteId;
   onChangePalette: (id: PaletteId) => void;
   onOpenPreferences: () => void;
+  scrollContainerRef?: React.RefObject<HTMLElement | null>;
+  savedScrollTop?: number;
+  allFiles?: Array<{ path: string; name: string; project: string }>;
 }
 
 function formatRelativeTime(epochMs: number): string {
@@ -316,6 +319,7 @@ export function MarkdownPreview({
   zoomLevel, fillScreen,
   onZoomIn, onZoomOut, onZoomReset, onToggleFillScreen,
   activePalette, onChangePalette, onOpenPreferences,
+  scrollContainerRef, savedScrollTop, allFiles,
 }: MarkdownPreviewProps) {
   const [showPalettePicker, setShowPalettePicker] = useState(false);
   const paletteBtnRef = useRef<HTMLButtonElement>(null);
@@ -364,6 +368,20 @@ export function MarkdownPreview({
     if (!fileContent?.content) return '';
     return md.render(fileContent.content);
   }, [fileContent?.content]);
+
+  // Related files: siblings in same folder, shown when doc > 20 lines and 2+ siblings
+  const relatedFiles = useMemo(() => {
+    if (!fileContent?.path || !allFiles) return [];
+    const lineCount = (fileContent.content?.split('\n').length ?? 0);
+    if (lineCount <= 20) return [];
+    const dir = fileContent.path.substring(0, fileContent.path.lastIndexOf('/'));
+    const siblings = allFiles.filter(f => {
+      if (f.path === fileContent.path) return false;
+      const fDir = f.path.substring(0, f.path.lastIndexOf('/'));
+      return fDir === dir;
+    });
+    return siblings.length >= 1 ? siblings : []; // 2+ sibling files means 1+ besides current
+  }, [fileContent?.path, fileContent?.content, allFiles]);
 
   // --- Page transition state ---
   const [transitionClass, setTransitionClass] = useState('');
@@ -420,6 +438,18 @@ export function MarkdownPreview({
     update();
     return () => scrollParent.removeEventListener('scroll', update);
   }, [html]);
+
+  // Restore scroll position after markdown renders
+  useEffect(() => {
+    if (savedScrollTop !== undefined && savedScrollTop > 0 && scrollContainerRef?.current) {
+      const container = scrollContainerRef.current;
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          container.scrollTop = savedScrollTop;
+        });
+      });
+    }
+  }, [fileContent?.path, savedScrollTop, scrollContainerRef]);
 
   // Add copy buttons to code blocks
   useEffect(() => {
@@ -700,6 +730,60 @@ export function MarkdownPreview({
         onClick={handleContentClick}
       />
 
+      {/* Related files */}
+      {relatedFiles.length > 0 && (
+        <details
+          className="related-files"
+          style={{
+            maxWidth: fillScreen ? undefined : '720px',
+            margin: '0 auto',
+            padding: '0 24px 32px',
+          }}
+        >
+          <summary
+            style={{
+              fontFamily: 'var(--font-ui)',
+              fontSize: 'var(--text-sm)',
+              color: 'var(--text-muted)',
+              cursor: 'pointer',
+              padding: '12px 0 8px',
+              borderTop: '1px solid var(--border)',
+              listStyle: 'none',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+            }}
+          >
+            <span style={{ fontSize: 'var(--text-xs)', opacity: 0.6 }}>{'\u25B8'}</span>
+            Related files in this folder ({relatedFiles.length})
+          </summary>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 2, paddingTop: 4 }}>
+            {relatedFiles.map(f => (
+              <button
+                key={f.path}
+                onClick={() => onSelectFile(f.path)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  textAlign: 'left',
+                  padding: '4px 8px',
+                  borderRadius: 4,
+                  cursor: 'pointer',
+                  fontFamily: 'var(--font-ui)',
+                  fontSize: 'var(--text-sm)',
+                  color: 'var(--text)',
+                  transition: 'background 0.1s',
+                }}
+                onMouseEnter={e => (e.currentTarget.style.background = 'var(--hover-bg, rgba(255,255,255,0.05))')}
+                onMouseLeave={e => (e.currentTarget.style.background = 'none')}
+              >
+                {f.name}
+              </button>
+            ))}
+          </div>
+        </details>
+      )}
+
       {/* Palette dropdown — grouped by tone */}
       {showPalettePicker && overflowBtnRef.current && (() => {
         const rect = overflowBtnRef.current!.getBoundingClientRect();
@@ -719,8 +803,8 @@ export function MarkdownPreview({
               width: 230,
               maxHeight: 420,
               overflowY: 'auto',
-              background: 'var(--surface, #161616)',
-              border: '1px solid var(--border, #2a2a2a)',
+              background: '#1a1a1a',
+              border: '1px solid #333',
               borderRadius: 8,
               padding: '4px 0',
               zIndex: 9999,
@@ -729,12 +813,12 @@ export function MarkdownPreview({
           >
             {groups.map(([category, palettes], gi) => (
               <div key={category}>
-                {gi > 0 && <div style={{ height: 1, background: 'var(--border)', margin: '4px 0' }} />}
+                {gi > 0 && <div style={{ height: 1, background: '#333', margin: '4px 0' }} />}
                 <div style={{
                   padding: '4px 12px 2px',
                   fontSize: 'var(--text-xs)',
                   fontFamily: 'var(--font-ui)',
-                  color: 'var(--text-muted)',
+                  color: '#888',
                   textTransform: 'uppercase',
                   letterSpacing: '0.05em',
                   fontWeight: 600,

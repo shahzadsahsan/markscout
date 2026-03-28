@@ -47,6 +47,7 @@ export interface UiStateResponse {
   favorites: FavoriteEntry[];
   favoriteFolders: string[];
   history: HistoryEntry[];
+  scrollPositions: Record<string, number>;
 }
 
 export interface UpdateCheckResult {
@@ -70,6 +71,7 @@ export interface SaveUiStateParams {
   zoomLevel?: number;
   fillScreen?: boolean;
   contentSearch?: boolean;
+  scrollPositions?: Record<string, number>;
 }
 
 // ---------------------------------------------------------------------------

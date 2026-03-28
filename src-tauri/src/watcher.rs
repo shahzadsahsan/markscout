@@ -518,6 +518,7 @@ fn read_state_sync() -> crate::types::AppState {
             zoom_level: 1.0,
             fill_screen: false,
             content_search: false,
+            scroll_positions: std::collections::HashMap::new(),
         },
         excluded_folders: vec![],
         last_session_at: None,
@@ -586,9 +587,153 @@ fn start_notify_watcher_blocking(
         *guard = Some(debouncer);
     });
 
+    // Periodic re-scan: every 30s, walk the watched dirs and reconcile
+    // with the registry. This catches files/dirs that FSEvents missed
+    // (common on macOS when new subdirectories are created after watch start).
+    let rescan_registry = registry.clone();
+    let rescan_app = app_handle.clone();
+    let rescan_dirs = watch_dirs.clone();
+    std::thread::spawn(move || {
+        loop {
+            std::thread::sleep(std::time::Duration::from_secs(30));
+            periodic_rescan(&rescan_registry, &rescan_app, &rescan_dirs);
+        }
+    });
+
     // Park this thread forever so the debouncer stays alive
     loop {
         std::thread::park();
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Periodic re-scan (safety net for missed FSEvents)
+// ---------------------------------------------------------------------------
+
+/// Lightweight re-scan: walk all watched dirs, find files not in registry
+/// (additions) and registry entries whose files no longer exist (removals).
+/// Only builds full FileEntry for genuinely new files to keep CPU low.
+fn periodic_rescan(
+    registry: &DashMap<String, FileEntry>,
+    app_handle: &AppHandle,
+    watch_dirs: &[String],
+) {
+    let ctx = load_filter_context_sync(app_handle);
+    let mut found_paths = std::collections::HashSet::new();
+
+    for dir in watch_dirs {
+        let root = PathBuf::from(dir);
+        if !root.exists() || !root.is_dir() {
+            continue;
+        }
+        collect_paths(&root, &root, &ctx, &mut found_paths);
+    }
+
+    // Additions: paths on disk but not in registry
+    let mut added = 0u32;
+    for abs_path in &found_paths {
+        if !registry.contains_key(abs_path) {
+            let path = Path::new(abs_path);
+            // Determine the watch root
+            let watch_root = watch_dirs
+                .iter()
+                .find(|d| abs_path.starts_with(d.as_str()))
+                .map(|d| PathBuf::from(d))
+                .unwrap_or_else(|| path.parent().unwrap_or(Path::new("/")).to_path_buf());
+
+            if let Some(entry) = build_file_entry(path, &watch_root) {
+                registry.insert(abs_path.clone(), entry.clone());
+                let _ = app_handle.emit(
+                    "file-event",
+                    serde_json::json!({
+                        "type": "file-added",
+                        "file": entry,
+                    }),
+                );
+                added += 1;
+            }
+        }
+    }
+
+    // Removals: paths in registry but no longer on disk
+    let mut removed = 0u32;
+    let stale: Vec<String> = registry
+        .iter()
+        .filter(|r| !Path::new(r.key()).exists())
+        .map(|r| r.key().clone())
+        .collect();
+    for path in &stale {
+        registry.remove(path);
+        let _ = app_handle.emit(
+            "file-event",
+            serde_json::json!({
+                "type": "file-removed",
+                "path": path,
+            }),
+        );
+        removed += 1;
+    }
+
+    if added > 0 || removed > 0 {
+        log::info!(
+            "[MarkScout] Periodic rescan: +{} added, -{} removed (registry: {})",
+            added,
+            removed,
+            registry.len()
+        );
+    }
+}
+
+/// Fast recursive walk that only collects absolute paths of eligible .md files
+/// (no content hash, no line count). Used by periodic_rescan.
+fn collect_paths(
+    current: &Path,
+    root: &Path,
+    ctx: &FilterContext,
+    out: &mut std::collections::HashSet<String>,
+) {
+    let entries = match fs::read_dir(current) {
+        Ok(e) => e,
+        Err(_) => return,
+    };
+
+    for entry in entries.flatten() {
+        let path = entry.path();
+        let file_name = entry.file_name();
+        let name_str = file_name.to_string_lossy();
+
+        if path.is_dir() {
+            if name_str.starts_with('.') {
+                if name_str.as_ref() != ".claude" && name_str.as_ref() != ".rvry" {
+                    continue;
+                }
+            }
+            if IGNORED_DIRS.contains(&name_str.as_ref()) {
+                continue;
+            }
+            collect_paths(&path, root, ctx, out);
+            continue;
+        }
+
+        if !name_str.ends_with(".md") {
+            continue;
+        }
+
+        let abs_path = path.to_string_lossy().to_string();
+        let filename = name_str.to_string();
+        let file_size = fs::metadata(&path).map(|m| m.len()).unwrap_or(0);
+
+        if filters::should_include_file(
+            &abs_path,
+            &filename,
+            &ctx.active_presets,
+            &ctx.user_filters,
+            ctx.min_size,
+            file_size,
+            &ctx.excluded_folders,
+        ) {
+            out.insert(abs_path);
+        }
     }
 }
 
