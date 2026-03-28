@@ -9,11 +9,23 @@ permissions:
   contents: write
 
 jobs:
-  build-macos:
-    runs-on: macos-latest
+  build:
     strategy:
+      fail-fast: false
       matrix:
-        arch: [x64, arm64]
+        include:
+          - platform: macos-latest
+            target: aarch64-apple-darwin
+            label: macOS-arm64
+          - platform: macos-latest
+            target: x86_64-apple-darwin
+            label: macOS-x64
+          # Uncomment when ready for Windows:
+          # - platform: windows-latest
+          #   target: x86_64-pc-windows-msvc
+          #   label: Windows-x64
+
+    runs-on: ${{ matrix.platform }}
     steps:
       - uses: actions/checkout@v4
 
@@ -22,62 +34,35 @@ jobs:
           node-version: 20
           cache: npm
 
-      # Install and build the Next.js app
-      - name: Install root dependencies
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - name: Install frontend dependencies
         run: npm ci
 
-      - name: Build Next.js app
+      - name: Build frontend
         run: npm run build
 
-      # Install and build the Electron wrapper
-      - name: Install Electron dependencies
-        working-directory: macos
-        run: npm ci
-
-      - name: Build Electron TypeScript
-        working-directory: macos
-        run: npx tsc -p tsconfig.json
-
-      # Package with Electron Forge
-      - name: Package app
-        working-directory: macos
-        run: npx electron-forge make --arch=${{ matrix.arch }}
+      - name: Build Tauri app
+        uses: tauri-apps/tauri-action@v0
         env:
-          # Skip code signing in CI
-          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
-
-      # Upload artifacts
-      - name: Upload DMG
-        uses: actions/upload-artifact@v4
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Skip code signing in CI (uncomment and set secrets for signing):
+          # APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          # APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          # APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
         with:
-          name: MarkScout-macOS-${{ matrix.arch }}-dmg
-          path: macos/out/make/**/*.dmg
-          if-no-files-found: ignore
-
-      - name: Upload ZIP
-        uses: actions/upload-artifact@v4
-        with:
-          name: MarkScout-macOS-${{ matrix.arch }}-zip
-          path: macos/out/make/**/*.zip
-          if-no-files-found: ignore
-
-  release:
-    needs: build-macos
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/download-artifact@v4
-        with:
-          path: artifacts
-          merge-multiple: true
-
-      - name: List artifacts
-        run: find artifacts -type f | head -20
-
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
-        with:
-          generate_release_notes: true
-          draft: false
-          files: |
-            artifacts/**/*.dmg
-            artifacts/**/*.zip
+          args: --target ${{ matrix.target }}
+          tagName: ${{ github.ref_name }}
+          releaseName: ${{ github.ref_name }}
+          releaseBody: |
+            See the [full changelog](https://github.com/${{ github.repository }}/commits/${{ github.ref_name }}) for details.
+          releaseDraft: false
+          prerelease: ${{ contains(github.ref_name, 'beta') || contains(github.ref_name, 'alpha') }}
