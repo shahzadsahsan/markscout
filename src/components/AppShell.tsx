@@ -73,7 +73,10 @@ export default function AppShell() {
   const ZOOM_STEPS = [0.85, 1, 1.25, 1.5, 2];
   const [zoomLevel, setZoomLevel] = useState(1);
   const [fillScreen, setFillScreen] = useState(false);
-  const [activePalette, setActivePalette] = useState<PaletteId>('parchment-dusk');
+  const [activePalette, setActivePalette] = useState<PaletteId>(() => {
+    const saved = localStorage.getItem('markscout-palette');
+    return (saved as PaletteId) || 'parchment-dusk';
+  });
   const [minLines, setMinLines] = useState(20);
   const mainRef = useRef<HTMLElement>(null);
 
@@ -669,14 +672,6 @@ export default function AppShell() {
     // otherwise store in localStorage as a fallback
     try {
       localStorage.setItem('markscout-palette', id);
-    } catch { /* silent */ }
-  }, []);
-
-  // Restore palette from localStorage on mount
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem('markscout-palette');
-      if (saved) setActivePalette(saved as PaletteId);
     } catch { /* silent */ }
   }, []);
 
