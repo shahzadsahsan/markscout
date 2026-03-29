@@ -29,12 +29,31 @@ pub async fn reveal_in_finder(
         return Err("Path not in watched directories".to_string());
     }
 
-    // macOS: open -R reveals in Finder
-    std::process::Command::new("open")
-        .arg("-R")
-        .arg(&path)
-        .spawn()
-        .map_err(|e| format!("Failed to reveal in Finder: {}", e))?;
+    // Reveal file in native file manager
+    #[cfg(target_os = "macos")]
+    {
+        std::process::Command::new("open")
+            .arg("-R")
+            .arg(&path)
+            .spawn()
+            .map_err(|e| format!("Failed to reveal in Finder: {}", e))?;
+    }
+    #[cfg(target_os = "windows")]
+    {
+        std::process::Command::new("explorer")
+            .arg(format!("/select,{}", &path))
+            .spawn()
+            .map_err(|e| format!("Failed to reveal in Explorer: {}", e))?;
+    }
+    #[cfg(target_os = "linux")]
+    {
+        // xdg-open opens the parent directory (no select equivalent)
+        let parent = Path::new(&path).parent().unwrap_or(Path::new(&path));
+        std::process::Command::new("xdg-open")
+            .arg(parent)
+            .spawn()
+            .map_err(|e| format!("Failed to reveal in file manager: {}", e))?;
+    }
 
     Ok(())
 }
@@ -45,10 +64,23 @@ pub async fn reveal_in_finder(
 
 #[tauri::command]
 pub async fn open_external(url: String) -> Result<(), String> {
-    std::process::Command::new("open")
+    #[cfg(target_os = "macos")]
+    let cmd = "open";
+    #[cfg(target_os = "windows")]
+    let cmd = "cmd";
+    #[cfg(target_os = "linux")]
+    let cmd = "xdg-open";
+
+    #[cfg(target_os = "windows")]
+    let result = std::process::Command::new(cmd)
+        .args(["/C", "start", "", &url])
+        .spawn();
+    #[cfg(not(target_os = "windows"))]
+    let result = std::process::Command::new(cmd)
         .arg(&url)
-        .spawn()
-        .map_err(|e| format!("Failed to open URL: {}", e))?;
+        .spawn();
+
+    result.map_err(|e| format!("Failed to open URL: {}", e))?;
 
     Ok(())
 }

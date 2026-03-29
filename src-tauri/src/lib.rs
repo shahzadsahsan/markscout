@@ -65,27 +65,39 @@ fn save_window_state(state: &WindowState) {
 fn build_menu(app: &tauri::App) -> tauri::Result<tauri::menu::Menu<tauri::Wry>> {
     let handle = app.handle();
 
-    // App menu (MarkScout)
-    let settings_item = MenuItemBuilder::with_id("settings", "Settings")
-        .accelerator("CmdOrCtrl+,")
-        .build(handle)?;
+    // macOS: app menu with About, Hide, Show All (these items don't exist on Windows)
+    #[cfg(target_os = "macos")]
+    let app_menu = {
+        let settings_item = MenuItemBuilder::with_id("settings", "Settings")
+            .accelerator("CmdOrCtrl+,")
+            .build(handle)?;
 
-    let app_menu = SubmenuBuilder::new(handle, "MarkScout")
-        .about(None)
-        .separator()
-        .item(&settings_item)
-        .separator()
-        .hide()
-        .hide_others()
-        .show_all()
-        .separator()
-        .quit()
-        .build()?;
+        SubmenuBuilder::new(handle, "MarkScout")
+            .about(None)
+            .separator()
+            .item(&settings_item)
+            .separator()
+            .hide()
+            .hide_others()
+            .show_all()
+            .separator()
+            .quit()
+            .build()?
+    };
 
     // File menu
-    let file_menu = SubmenuBuilder::new(handle, "File")
-        .close_window()
-        .build()?;
+    let file_menu = {
+        let mut builder = SubmenuBuilder::new(handle, "File");
+        // Windows: add Settings to File menu (macOS has it in the app menu)
+        #[cfg(not(target_os = "macos"))]
+        {
+            let settings_item = MenuItemBuilder::with_id("settings", "Settings")
+                .accelerator("CmdOrCtrl+,")
+                .build(handle)?;
+            builder = builder.item(&settings_item).separator();
+        }
+        builder.close_window().build()?
+    };
 
     // Edit menu
     let edit_menu = SubmenuBuilder::new(handle, "Edit")
@@ -137,8 +149,12 @@ fn build_menu(app: &tauri::App) -> tauri::Result<tauri::menu::Menu<tauri::Wry>> 
         .build()?;
 
     // Build the full menu bar
-    let menu = MenuBuilder::new(handle)
-        .item(&app_menu)
+    let mut menu_builder = MenuBuilder::new(handle);
+    #[cfg(target_os = "macos")]
+    {
+        menu_builder = menu_builder.item(&app_menu);
+    }
+    let menu = menu_builder
         .item(&file_menu)
         .item(&edit_menu)
         .item(&view_menu)
