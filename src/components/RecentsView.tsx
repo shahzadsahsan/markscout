@@ -1,7 +1,6 @@
 import { useState, useMemo, useCallback } from 'react';
 import type { FileEntry } from '../lib/types';
 import { FileItem, getStalenessOpacity } from './FileItem';
-import { getProjectColor } from '../lib/projectColors';
 
 interface RecentsViewProps {
   files: FileEntry[];
@@ -20,8 +19,6 @@ const TIME_FILTERS: { key: TimeFilter; label: string; ms: number }[] = [
   { key: 'all', label: 'All', ms: 0 },
 ];
 
-const PREVIEW_COUNT = 3; // Files shown per group before "show more"
-
 export function RecentsView({
   files,
   selectedPath,
@@ -31,11 +28,11 @@ export function RecentsView({
 }: RecentsViewProps) {
   const [timeFilter, setTimeFilter] = useState<TimeFilter>('all');
   const [groupByFolder, setGroupByFolder] = useState(() => localStorage.getItem('markscout-recents-grouped') === 'true');
-  // Tracks which groups are fully expanded (show all files)
-  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
+  // Default all folders to collapsed
+  const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
 
-  const toggleExpand = useCallback((project: string) => {
-    setExpandedGroups(prev => {
+  const toggleFolder = useCallback((project: string) => {
+    setExpandedFolders(prev => {
       const next = new Set(prev);
       if (next.has(project)) next.delete(project);
       else next.add(project);
@@ -44,16 +41,12 @@ export function RecentsView({
   }, []);
 
   const filteredFiles = useMemo(() => {
-    let result = files;
-    if (timeFilter !== 'all') {
-      const threshold = TIME_FILTERS.find(f => f.key === timeFilter)!.ms;
-      const cutoff = Date.now() - threshold;
-      result = result.filter(f => f.modifiedAt >= cutoff);
-    }
-    return result;
+    if (timeFilter === 'all') return files;
+    const threshold = TIME_FILTERS.find(f => f.key === timeFilter)!.ms;
+    const cutoff = Date.now() - threshold;
+    return files.filter(f => f.modifiedAt >= cutoff);
   }, [files, timeFilter]);
 
-  // Smart groups: project → files, sorted by most recent project first
   const groupedFiles = useMemo(() => {
     if (!groupByFolder) return null;
     const groups = new Map<string, FileEntry[]>();
@@ -63,17 +56,13 @@ export function RecentsView({
       groups.set(f.project, arr);
     }
     return [...groups.entries()]
-      .map(([project, gFiles]) => ({
-        project,
-        files: gFiles,
-        latestMod: Math.max(...gFiles.map(f => f.modifiedAt)),
-      }))
+      .map(([project, gFiles]) => ({ project, files: gFiles, latestMod: Math.max(...gFiles.map(f => f.modifiedAt)) }))
       .sort((a, b) => b.latestMod - a.latestMod);
   }, [filteredFiles, groupByFolder]);
 
   return (
     <div>
-      {/* Filter pills */}
+      {/* Time filter pills */}
       <div
         className="flex items-center gap-1.5 px-3 py-2 border-b"
         style={{ borderColor: 'var(--border)' }}
@@ -89,23 +78,19 @@ export function RecentsView({
         ))}
         <div style={{ flex: 1 }} />
         <button
-          className={`filter-pill ${!groupByFolder ? 'active' : ''}`}
-          onClick={() => {
-            setGroupByFolder(false);
-            localStorage.setItem('markscout-recents-grouped', 'false');
-          }}
-        >
-          Sort: Recent
-        </button>
-        <button
           className={`filter-pill ${groupByFolder ? 'active' : ''}`}
           onClick={() => {
-            setGroupByFolder(true);
-            localStorage.setItem('markscout-recents-grouped', 'true');
-            setExpandedGroups(new Set());
+            setGroupByFolder(prev => {
+              const next = !prev;
+              localStorage.setItem('markscout-recents-grouped', String(next));
+              if (next) setExpandedFolders(new Set()); // collapse all on enable
+              return next;
+            });
           }}
+          title="Group by folder"
+          style={{ display: 'flex', alignItems: 'center', gap: 3 }}
         >
-          Sort: Folder
+          <span>{'\uD83D\uDCC2'}</span><span>Folders</span>
         </button>
       </div>
 
@@ -119,58 +104,39 @@ export function RecentsView({
           )}
         </div>
       ) : groupByFolder && groupedFiles ? (
-        /* Smart grouped view: colored header + latest 3 files + expand */
         <div className="py-1">
           {groupedFiles.map(group => {
-            const isExpanded = expandedGroups.has(group.project);
-            const visibleFiles = isExpanded ? group.files : group.files.slice(0, PREVIEW_COUNT);
-            const hiddenCount = group.files.length - PREVIEW_COUNT;
-            const color = getProjectColor(group.project);
-
+            const isExpanded = expandedFolders.has(group.project);
             return (
-              <div key={group.project} style={{ marginBottom: 2 }}>
-                {/* Project header with colored left bar */}
-                <div
+              <div key={group.project}>
+                <button
+                  onClick={() => toggleFolder(group.project)}
+                  className="w-full px-3 py-1.5 flex items-center gap-2 text-left"
                   style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 8,
-                    padding: '6px 12px 5px',
-                    borderLeft: `4px solid ${color}`,
+                    fontSize: 'var(--text-sm)',
+                    fontFamily: 'var(--font-mono)',
+                    color: 'var(--text-muted)',
+                    borderBottom: '1px solid var(--border)',
                     background: 'var(--bg)',
                     position: 'sticky',
                     top: 0,
                     zIndex: 1,
-                    borderBottom: '1px solid var(--border)',
+                    border: 'none',
+                    cursor: 'pointer',
+                    borderBottomWidth: 1,
+                    borderBottomStyle: 'solid',
+                    borderBottomColor: 'var(--border)',
+                    transition: 'color 0.12s',
                   }}
+                  onMouseEnter={e => (e.currentTarget.style.color = 'var(--text)')}
+                  onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-muted)')}
                 >
-                  <span
-                    style={{
-                      flex: 1,
-                      fontSize: 'var(--text-sm)',
-                      fontFamily: 'var(--font-ui)',
-                      fontWeight: 600,
-                      color: color,
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      whiteSpace: 'nowrap',
-                    }}
-                  >
-                    {group.project}
-                  </span>
-                  <span
-                    style={{
-                      fontSize: 'var(--text-xs)',
-                      color: 'var(--text-muted)',
-                      flexShrink: 0,
-                    }}
-                  >
-                    {group.files.length}
-                  </span>
-                </div>
-
-                {/* Visible files */}
-                {visibleFiles.map(file => (
+                  <span style={{ fontSize: 'var(--text-xs)', opacity: 0.6 }}>{isExpanded ? '\u25BE' : '\u25B8'}</span>
+                  <span>{'\uD83D\uDCC2'}</span>
+                  <span style={{ flex: 1 }}>{group.project}</span>
+                  <span style={{ fontSize: 'var(--text-xs)', opacity: 0.5 }}>{group.files.length}</span>
+                </button>
+                {isExpanded && group.files.map(file => (
                   <FileItem
                     key={file.path}
                     file={file}
@@ -179,41 +145,13 @@ export function RecentsView({
                     onSelect={onSelectFile}
                     onToggleStar={onToggleStar}
                     stalenessOpacity={getStalenessOpacity(file.modifiedAt)}
-                    hideProject
                   />
                 ))}
-
-                {/* Show more / less toggle */}
-                {hiddenCount > 0 && (
-                  <button
-                    onClick={() => toggleExpand(group.project)}
-                    style={{
-                      display: 'block',
-                      width: '100%',
-                      padding: '4px 12px 6px',
-                      background: 'none',
-                      border: 'none',
-                      borderBottom: '1px solid var(--border)',
-                      cursor: 'pointer',
-                      fontSize: 'var(--text-xs)',
-                      fontFamily: 'var(--font-ui)',
-                      color: color,
-                      textAlign: 'left',
-                      opacity: 0.8,
-                      transition: 'opacity 0.12s',
-                    }}
-                    onMouseEnter={e => (e.currentTarget.style.opacity = '1')}
-                    onMouseLeave={e => (e.currentTarget.style.opacity = '0.8')}
-                  >
-                    {isExpanded ? '\u25B4 Show less' : `\u25BE +${hiddenCount} more`}
-                  </button>
-                )}
               </div>
             );
           })}
         </div>
       ) : (
-        /* Flat list (default) */
         <div className="py-1">
           {filteredFiles.map(file => (
             <FileItem
