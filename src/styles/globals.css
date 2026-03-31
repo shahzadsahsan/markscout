@@ -525,6 +525,7 @@ pre:hover .copy-btn {
 
 .content-area {
   position: relative;
+  padding-left: 28px;
 }
 
 /* ===== Page Transitions ===== */

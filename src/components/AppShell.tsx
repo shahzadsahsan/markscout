@@ -11,6 +11,110 @@ import { loadSavedTypography, getTypographyPreset, applyTypographyPreset } from 
 
 type ConnectionStatus = 'connected' | 'reconnecting' | 'disconnected';
 
+// Scroll progress rail — clickable horizontal dashes pinned to the left edge of the content pane.
+// Each tick jumps to that proportion of the document. Bold dash shows current position.
+function ScrollProgressRail({ containerRef, contentLeft }: { containerRef: React.RefObject<HTMLElement | null>; contentLeft: number }) {
+  const [progress, setProgress] = useState(0);
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+
+    const update = () => {
+      const { scrollTop, scrollHeight, clientHeight } = el;
+      const maxScroll = scrollHeight - clientHeight;
+      if (maxScroll <= 0) {
+        setVisible(false);
+        return;
+      }
+      setVisible(true);
+      setProgress(scrollTop / maxScroll);
+    };
+
+    el.addEventListener('scroll', update, { passive: true });
+    const timer = setTimeout(update, 100);
+    return () => {
+      el.removeEventListener('scroll', update);
+      clearTimeout(timer);
+    };
+  }, [containerRef]);
+
+  const scrollTo = useCallback((fraction: number) => {
+    const el = containerRef.current;
+    if (!el) return;
+    const maxScroll = el.scrollHeight - el.clientHeight;
+    el.scrollTo({ top: fraction * maxScroll, behavior: 'smooth' });
+  }, [containerRef]);
+
+  if (!visible) return null;
+
+  const TICKS = 10;
+  const railHeight = 180;
+  const indicatorY = progress * (railHeight - 5);
+
+  return (
+    <div
+      style={{
+        position: 'fixed',
+        left: contentLeft + 5,
+        top: 90,
+        width: 20,
+        height: railHeight,
+        zIndex: 50,
+        color: 'var(--text, #e0e0e0)',
+      }}
+    >
+      {/* Clickable tick dashes */}
+      {Array.from({ length: TICKS }).map((_, i) => {
+        const fraction = i / (TICKS - 1);
+        const tickTop = fraction * (railHeight - 2);
+        return (
+          <div
+            key={i}
+            onClick={() => scrollTo(fraction)}
+            style={{
+              position: 'absolute',
+              top: tickTop - 6,
+              left: 0,
+              width: 20,
+              height: 14,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <div
+              style={{
+                width: 12,
+                height: 1.5,
+                background: 'currentColor',
+                opacity: 0.18,
+                borderRadius: 1,
+              }}
+            />
+          </div>
+        );
+      })}
+      {/* Current position — thicker, bolder dash */}
+      <div
+        style={{
+          position: 'absolute',
+          top: indicatorY,
+          left: 1,
+          width: 18,
+          height: 4,
+          background: 'currentColor',
+          opacity: 0.5,
+          borderRadius: 2,
+          pointerEvents: 'none',
+        }}
+      />
+    </div>
+  );
+}
+
 export default function AppShell() {
   // File state
   const [files, setFiles] = useState<FileEntry[]>([]);
@@ -1008,10 +1112,12 @@ export default function AppShell() {
           <div className="sidebar-resize-handle" onMouseDown={startSidebarDrag} />
         )}
 
-        <main
-          ref={mainRef}
-          className="flex-1 overflow-y-auto content-area"
-        >
+        <div style={{ position: 'relative', flex: 1, display: 'flex', overflow: 'hidden' }}>
+          <ScrollProgressRail containerRef={mainRef} contentLeft={sidebarCollapsed ? 0 : sidebarWidth} />
+          <main
+            ref={mainRef}
+            className="flex-1 overflow-y-auto content-area"
+          >
           <MarkdownPreview
             fileContent={fileContent}
             loading={contentLoading}
@@ -1032,6 +1138,7 @@ export default function AppShell() {
             allFiles={safeFiles}
           />
         </main>
+        </div>
       </div>
 
       <div className="status-bar">
