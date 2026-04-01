@@ -37,30 +37,12 @@ class SyncFolderManager {
 
         let manifestURL = folderURL.appendingPathComponent("manifest.json")
 
-        // Check if the file exists at all (even as an iCloud placeholder)
-        let fm = FileManager.default
-        let exists = fm.fileExists(atPath: manifestURL.path)
+        // Always trigger iCloud download — the file may be evicted or not yet synced.
+        // startDownloadingUbiquitousItem works whether the file is a placeholder or not.
+        try? FileManager.default.startDownloadingUbiquitousItem(at: manifestURL)
 
-        if !exists {
-            // Check if there's an .icloud placeholder (evicted file)
-            let icloudName = ".manifest.json.icloud"
-            let icloudURL = folderURL.appendingPathComponent(icloudName)
-            let placeholderExists = fm.fileExists(atPath: icloudURL.path)
-
-            if placeholderExists {
-                // File exists but is evicted — trigger download
-                try? fm.startDownloadingUbiquitousItem(at: manifestURL)
-            } else {
-                // Neither file nor placeholder — list what IS in the folder
-                let contents = (try? fm.contentsOfDirectory(atPath: folderURL.path)) ?? []
-                let listing = contents.isEmpty ? "empty folder" : contents.prefix(20).joined(separator: ", ")
-                throw SyncError.manifestNotFoundDetail(
-                    "manifest.json not in: \(folderURL.lastPathComponent)/\n\nFolder path: \(folderURL.path)\n\nContents: \(listing)"
-                )
-            }
-        }
-
-        try await ensureDownloaded(manifestURL, timeout: 60)
+        // Wait for it to arrive (polls for up to 90 seconds)
+        try await ensureDownloaded(manifestURL, timeout: 90)
         let data = try Data(contentsOf: manifestURL)
         return try JSONDecoder().decode(SyncManifest.self, from: data)
     }
@@ -190,6 +172,32 @@ enum SyncError: LocalizedError {
 struct FolderPickerResult {
     let url: URL
     let manifest: SyncManifest
+}
+
+/// Simple coordinator that just saves the bookmark and returns the URL.
+/// The caller handles manifest reading separately (with proper UI feedback).
+class SimpleFolderPickerCoordinator: NSObject, UIDocumentPickerDelegate {
+    let completion: (URL?) -> Void
+    private let folderManager: SyncFolderManager
+
+    init(folderManager: SyncFolderManager, completion: @escaping (URL?) -> Void) {
+        self.folderManager = folderManager
+        self.completion = completion
+    }
+
+    func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) {
+        guard let url = urls.first else { completion(nil); return }
+        do {
+            try folderManager.saveBookmark(for: url)
+            completion(url)
+        } catch {
+            completion(nil)
+        }
+    }
+
+    func documentPickerWasCancelled(_ controller: UIDocumentPickerViewController) {
+        completion(nil)
+    }
 }
 
 class FolderPickerCoordinator: NSObject, UIDocumentPickerDelegate {

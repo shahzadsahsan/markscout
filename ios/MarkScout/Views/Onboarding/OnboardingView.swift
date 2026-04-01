@@ -11,7 +11,7 @@ struct OnboardingView: View {
     let folderManager: SyncFolderManager
     let onComplete: (SyncManifest) -> Void
 
-    @State private var pickerCoordinator: FolderPickerCoordinator?
+    @State private var pickerCoordinator: SimpleFolderPickerCoordinator?
 
     var body: some View {
         VStack(spacing: 0) {
@@ -123,9 +123,12 @@ struct OnboardingView: View {
             } else {
                 ProgressView()
                     .tint(Color.amber)
-                Text("Reading manifest...")
+                Text("Waiting for iCloud sync...")
                     .font(.system(.callout, design: .monospaced))
                     .foregroundStyle(Color.msMuted)
+                Text("This may take a minute the first time")
+                    .font(.caption)
+                    .foregroundStyle(Color.msMuted.opacity(0.6))
             }
             Spacer()
         }
@@ -155,17 +158,12 @@ struct OnboardingView: View {
         let picker = UIDocumentPickerViewController(forOpeningContentTypes: [.folder])
         picker.allowsMultipleSelection = false
 
-        let coordinator = FolderPickerCoordinator(folderManager: folderManager) { result in
-            switch result {
-            case .success(let pickerResult):
-                startDownloading(manifest: pickerResult.manifest)
-            case .failure(let error):
-                if case SyncError.noBookmark = error {
-                    // User cancelled — do nothing
-                } else {
-                    errorMessage = error.localizedDescription
-                    showError = true
-                }
+        let coordinator = SimpleFolderPickerCoordinator(folderManager: folderManager) { url in
+            if let url {
+                // Folder picked — immediately show downloading UI, then fetch manifest
+                startSyncing()
+            } else {
+                // User cancelled — do nothing
             }
         }
         picker.delegate = coordinator
@@ -177,13 +175,38 @@ struct OnboardingView: View {
         }
     }
 
-    private func startDownloading(manifest: SyncManifest) {
+    /// After folder is picked: show downloading UI, fetch manifest from iCloud, then download files.
+    private func startSyncing() {
         isDownloading = true
-        downloadProgress = (0, manifest.fileCount)
+        downloadProgress = (0, 0) // Shows "Waiting for iCloud..." initially
 
         Task {
+            // Step 1: Wait for manifest.json to download from iCloud
+            let manifest: SyncManifest
+            do {
+                manifest = try await folderManager.readManifest()
+            } catch {
+                await MainActor.run {
+                    isDownloading = false
+                    if case SyncError.downloadTimeout = error {
+                        errorMessage = "iCloud is still syncing manifest.json. Make sure you're on WiFi and try again in a minute."
+                    } else {
+                        errorMessage = error.localizedDescription
+                    }
+                    showError = true
+                }
+                return
+            }
+
+            // Step 2: Download all the markdown files
+            await MainActor.run {
+                downloadProgress = (0, manifest.fileCount)
+            }
+
             let downloaded = await folderManager.downloadAllFiles(manifest: manifest) { current, total in
-                downloadProgress = (current, total)
+                Task { @MainActor in
+                    downloadProgress = (current, total)
+                }
             }
 
             await MainActor.run {
