@@ -39,7 +39,7 @@
 		0B212B58A498EF5C75F5599A /* Palette.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Palette.swift; sourceTree = "<group>"; };
 		2690F20ED13B24CAF8D1CC33 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		35DD13D8FAE055E713E6A609 /* AppState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppState.swift; sourceTree = "<group>"; };
-		366C34C445B1B7E223CA0BDB /* MarkScout.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = MarkScout.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		366C34C445B1B7E223CA0BDB /* MarkScout.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MarkScout.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		38738AF34E3A067FEB750D7A /* SampleData */ = {isa = PBXFileReference; lastKnownFileType = folder; name = SampleData; path = MarkScout/Resources/SampleData; sourceTree = SOURCE_ROOT; };
 		468708DB6DECEDD49FCA9855 /* SyncFolderManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyncFolderManager.swift; sourceTree = "<group>"; };
 		4F59305434711C55DE452903 /* reader.html */ = {isa = PBXFileReference; lastKnownFileType = text.html; path = reader.html; sourceTree = "<group>"; };
@@ -52,8 +52,8 @@
 		9AD0B209E9E1E473F9D16340 /* SyncManifest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyncManifest.swift; sourceTree = "<group>"; };
 		9C63E30CE7C3CB172013E410 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		A11FEBC62F528123D93C85D5 /* MarkdownRenderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarkdownRenderer.swift; sourceTree = "<group>"; };
-		AD1438BC674E845BE24F1994 /* SourceSerif4-Regular.woff2 */ = {isa = PBXFileReference; path = "SourceSerif4-Regular.woff2"; sourceTree = "<group>"; };
-		BBA4966F9B4B3E285B5842EE /* JetBrainsMono-Regular.woff2 */ = {isa = PBXFileReference; path = "JetBrainsMono-Regular.woff2"; sourceTree = "<group>"; };
+		AD1438BC674E845BE24F1994 /* SourceSerif4-Regular.woff2 */ = {isa = PBXFileReference; lastKnownFileType = file; path = "SourceSerif4-Regular.woff2"; sourceTree = "<group>"; };
+		BBA4966F9B4B3E285B5842EE /* JetBrainsMono-Regular.woff2 */ = {isa = PBXFileReference; lastKnownFileType = text; path = "JetBrainsMono-Regular.woff2"; sourceTree = "<group>"; };
 		E7DFEC758611806625B47104 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
 		F83224C8B63245D089D1ED3A /* reader.css */ = {isa = PBXFileReference; lastKnownFileType = text.css; path = reader.css; sourceTree = "<group>"; };
 		F93EEFDA9C5832C945C20F7B /* FileListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileListView.swift; sourceTree = "<group>"; };
@@ -384,6 +384,7 @@
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = NF42YB3AHP;
 				INFOPLIST_FILE = MarkScout/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -404,6 +405,7 @@
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = NF42YB3AHP;
 				INFOPLIST_FILE = MarkScout/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",

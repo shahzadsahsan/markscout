@@ -28,51 +28,32 @@ struct FileListView: View {
             await refreshManifest()
         }
         .toolbar {
+            ToolbarItem(placement: .topBarLeading) {
+                NavigationLink(value: "folders") {
+                    Image(systemName: "folder")
+                        .foregroundStyle(Color.msMuted)
+                }
+            }
             ToolbarItem(placement: .principal) {
-                syncStatusView
+                compactTopBar
             }
             ToolbarItem(placement: .topBarTrailing) {
-                HStack(spacing: 12) {
-                    NavigationLink(value: "folders") {
-                        Image(systemName: "folder")
-                            .foregroundStyle(Color.msMuted)
-                    }
-                    NavigationLink(value: "settings") {
-                        Image(systemName: "gearshape")
-                            .foregroundStyle(Color.msMuted)
-                    }
+                NavigationLink(value: "settings") {
+                    Image(systemName: "gearshape")
+                        .foregroundStyle(Color.msMuted)
                 }
             }
         }
-        .safeAreaInset(edge: .top) {
-            segmentPicker
-        }
     }
 
-    private var segmentPicker: some View {
+    private var compactTopBar: some View {
         Picker("", selection: $appState.activeSegment) {
             ForEach(FileSegment.allCases, id: \.self) { segment in
                 Text(segment.rawValue).tag(segment)
             }
         }
         .pickerStyle(.segmented)
-        .padding(.horizontal)
-        .padding(.vertical, 8)
-        .background(Color.msBackground)
-    }
-
-    private var syncStatusView: some View {
-        Group {
-            if appState.isOffline {
-                Label("Offline — cached data", systemImage: "wifi.slash")
-                    .font(.caption)
-                    .foregroundStyle(Color.msMuted)
-            } else if let lastSync = appState.lastSyncCheck {
-                Text("Synced \(lastSync, format: .relative(presentation: .named))")
-                    .font(.caption)
-                    .foregroundStyle(Color.msMuted)
-            }
-        }
+        .frame(maxWidth: .infinity)
     }
 
     private var emptyState: some View {

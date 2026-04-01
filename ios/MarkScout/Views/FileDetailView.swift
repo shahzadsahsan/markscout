@@ -16,49 +16,56 @@ struct FileDetailView: View {
     @State private var headings: [HeadingItem] = []
     @State private var activeHeadingId: String?
     @State private var showResumeToast = false
-    @State private var webViewRef: WKWebView?
+    @State private var scrollPercentage: Double = 0
 
     // Handoff
     @State private var userActivity: NSUserActivity?
 
     var body: some View {
-        VStack(spacing: 0) {
-            // Search bar overlay
-            if showSearch {
-                searchBar
+        ZStack(alignment: .trailing) {
+            VStack(spacing: 0) {
+                // Search bar overlay
+                if showSearch {
+                    searchBar
+                }
+
+                // File header
+                fileHeader
+
+                // Markdown content
+                if isLoading {
+                    ProgressView()
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                } else if let content {
+                    MarkdownWebView(
+                        markdownContent: content,
+                        paletteId: appState.activePalette,
+                        zoomLevel: appState.zoomLevel,
+                        onScrollPosition: { pct in
+                            scrollPercentage = pct
+                            appState.saveReadingPosition(for: file.relativePath, percentage: pct, contentHash: file.contentHash)
+                        },
+                        onHeadingsExtracted: { items in
+                            headings = items
+                        },
+                        onActiveHeading: { id in
+                            activeHeadingId = id
+                        },
+                        onLinkTapped: { url in
+                            UIApplication.shared.open(url)
+                        },
+                        restoreScrollPercentage: appState.readingPosition(for: file.relativePath, contentHash: file.contentHash)
+                    )
+                } else {
+                    Text("Unable to load file")
+                        .foregroundStyle(Color.msMuted)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                }
             }
 
-            // File header
-            fileHeader
-
-            // Markdown content
-            if isLoading {
-                ProgressView()
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-            } else if let content {
-                MarkdownWebView(
-                    markdownContent: content,
-                    paletteId: appState.activePalette,
-                    zoomLevel: appState.zoomLevel,
-                    onScrollPosition: { pct in
-                        appState.saveReadingPosition(for: file.relativePath, percentage: pct, contentHash: file.contentHash)
-                    },
-                    onHeadingsExtracted: { items in
-                        headings = items
-                    },
-                    onActiveHeading: { id in
-                        activeHeadingId = id
-                    },
-                    onLinkTapped: { url in
-                        UIApplication.shared.open(url)
-                    },
-                    restoreScrollPercentage: appState.readingPosition(for: file.relativePath, contentHash: file.contentHash)
-                )
-                .gesture(swipeLeftGesture)
-            } else {
-                Text("Unable to load file")
-                    .foregroundStyle(Color.msMuted)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            // Scroll progress rail on right edge
+            if !isLoading && content != nil {
+                scrollProgressRail
             }
         }
         .background(Color.msBackground)
@@ -114,8 +121,6 @@ struct FileDetailView: View {
         .sheet(isPresented: $showTOC) {
             TOCSheet(headings: headings, activeHeadingId: activeHeadingId) { headingId in
                 showTOC = false
-                // Scroll to heading via JS — we need a reference to the webview
-                // Post notification that FileDetailView picks up
                 NotificationCenter.default.post(name: .scrollToHeading, object: headingId)
             }
             .presentationDetents([.medium, .large])
@@ -146,6 +151,36 @@ struct FileDetailView: View {
         }
     }
 
+    // MARK: - Scroll Progress Rail
+
+    private var scrollProgressRail: some View {
+        GeometryReader { geo in
+            let trackHeight = geo.size.height * 0.6
+            let indicatorHeight: CGFloat = 40
+            let maxOffset = trackHeight - indicatorHeight
+            let offset = maxOffset * scrollPercentage
+
+            ZStack(alignment: .top) {
+                // Track
+                RoundedRectangle(cornerRadius: 1.5)
+                    .fill(Color.msBorder.opacity(0.4))
+                    .frame(width: 3, height: trackHeight)
+
+                // Thumb
+                RoundedRectangle(cornerRadius: 2)
+                    .fill(Color.amber.opacity(0.7))
+                    .frame(width: 3, height: indicatorHeight)
+                    .offset(y: offset)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .trailing)
+            .padding(.trailing, 2)
+            .padding(.vertical, geo.size.height * 0.2)
+        }
+        .allowsHitTesting(false)
+        .opacity(scrollPercentage > 0.01 ? 1 : 0)
+        .animation(.easeInOut(duration: 0.2), value: scrollPercentage)
+    }
+
     // MARK: - File Header
 
     private var fileHeader: some View {
@@ -167,6 +202,10 @@ struct FileDetailView: View {
                         .foregroundStyle(Color.msMuted)
                 }
                 Spacer()
+                // Scroll percentage
+                Text("\(Int(scrollPercentage * 100))%")
+                    .font(.system(.caption2, design: .monospaced))
+                    .foregroundStyle(Color.msMuted)
                 if appState.isFavorite(file.relativePath) {
                     Image(systemName: "star.fill")
                         .foregroundStyle(Color.amber)
@@ -202,25 +241,6 @@ struct FileDetailView: View {
         .background(Color.msSurface.opacity(0.95))
     }
 
-    // MARK: - Swipe to next file
-
-    private var swipeLeftGesture: some Gesture {
-        DragGesture(minimumDistance: 50)
-            .onEnded { value in
-                if value.translation.width < -50, abs(value.translation.height) < 100 {
-                    navigateToNextFile()
-                }
-            }
-    }
-
-    private func navigateToNextFile() {
-        guard let idx = appState.currentFileIndex,
-              idx + 1 < appState.navigationFileList.count else { return }
-        let nextFile = appState.navigationFileList[idx + 1]
-        appState.currentFileIndex = idx + 1
-        appState.selectedFile = nextFile
-    }
-
     // MARK: - Content Loading
 
     private func loadContent() async {
@@ -234,8 +254,9 @@ struct FileDetailView: View {
         }
         isLoading = false
 
-        // Show resume toast if restoring position
-        if appState.readingPosition(for: file.relativePath, contentHash: file.contentHash) != nil {
+        // Restore reading position
+        if let pos = appState.readingPosition(for: file.relativePath, contentHash: file.contentHash) {
+            scrollPercentage = pos
             showResumeToast = true
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
                 withAnimation { showResumeToast = false }
@@ -249,7 +270,6 @@ struct FileDetailView: View {
 
     private func performSearch() {
         // WKWebView find-in-page would require a reference to the webview
-        // For now, this is a placeholder that works with the JS bridge
     }
 
     // MARK: - Handoff

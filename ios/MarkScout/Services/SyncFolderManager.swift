@@ -26,6 +26,8 @@ class SyncFolderManager {
         return url
     }
 
+    // MARK: - Reading
+
     func readManifest() async throws -> SyncManifest {
         let folderURL = try resolveBookmark()
         guard folderURL.startAccessingSecurityScopedResource() else {
@@ -34,7 +36,7 @@ class SyncFolderManager {
         defer { folderURL.stopAccessingSecurityScopedResource() }
 
         let manifestURL = folderURL.appendingPathComponent("manifest.json")
-        try await ensureDownloaded(manifestURL)
+        try await ensureDownloaded(manifestURL, timeout: 60)
         let data = try Data(contentsOf: manifestURL)
         return try JSONDecoder().decode(SyncManifest.self, from: data)
     }
@@ -47,30 +49,80 @@ class SyncFolderManager {
         defer { folderURL.stopAccessingSecurityScopedResource() }
 
         let fileURL = folderURL.appendingPathComponent("files").appendingPathComponent(relativePath)
-        try await ensureDownloaded(fileURL)
+        try await ensureDownloaded(fileURL, timeout: 60)
         return try String(contentsOf: fileURL, encoding: .utf8)
     }
 
+    // MARK: - Batch Download
+
+    /// Downloads all files from manifest with progress reporting.
+    /// Returns the number of files successfully downloaded.
+    func downloadAllFiles(
+        manifest: SyncManifest,
+        onProgress: @escaping (Int, Int) -> Void
+    ) async -> Int {
+        let folderURL: URL
+        do {
+            folderURL = try resolveBookmark()
+        } catch {
+            return 0
+        }
+        guard folderURL.startAccessingSecurityScopedResource() else { return 0 }
+        defer { folderURL.stopAccessingSecurityScopedResource() }
+
+        let total = manifest.files.count
+        var downloaded = 0
+
+        for (index, file) in manifest.files.enumerated() {
+            let fileURL = folderURL.appendingPathComponent("files").appendingPathComponent(file.relativePath)
+            do {
+                try await ensureDownloaded(fileURL, timeout: 30)
+                downloaded += 1
+            } catch {
+                // Skip files that fail to download — they'll be tried again later
+            }
+            await MainActor.run { onProgress(index + 1, total) }
+        }
+
+        return downloaded
+    }
+
+    // MARK: - Download Helper
+
     /// Triggers download of an iCloud-evicted file and waits until it's available.
-    private func ensureDownloaded(_ url: URL) async throws {
+    private func ensureDownloaded(_ url: URL, timeout: Int) async throws {
+        // Already downloaded and readable
         let values = try? url.resourceValues(forKeys: [.ubiquitousItemDownloadingStatusKey])
         if let status = values?.ubiquitousItemDownloadingStatus, status == .current {
             return
         }
-        if FileManager.default.isReadableFile(atPath: url.path) {
-            if let data = try? Data(contentsOf: url), !data.isEmpty { return }
+        if FileManager.default.isReadableFile(atPath: url.path),
+           let data = try? Data(contentsOf: url), !data.isEmpty {
+            return
         }
+
+        // Trigger iCloud download
         try? FileManager.default.startDownloadingUbiquitousItem(at: url)
-        // Poll until available (up to 30s)
-        for _ in 0..<60 {
+
+        // Poll until available
+        let iterations = timeout * 2 // 500ms intervals
+        for _ in 0..<iterations {
+            try await Task.sleep(for: .milliseconds(500))
+
+            let vals = try? url.resourceValues(forKeys: [.ubiquitousItemDownloadingStatusKey])
+            if let status = vals?.ubiquitousItemDownloadingStatus, status == .current {
+                return
+            }
             if FileManager.default.isReadableFile(atPath: url.path),
                let data = try? Data(contentsOf: url), !data.isEmpty {
                 return
             }
-            try await Task.sleep(for: .milliseconds(500))
         }
-        throw SyncError.fileNotFound(url.lastPathComponent)
+
+        throw SyncError.downloadTimeout(url.lastPathComponent)
     }
+
+    // MARK: - Utilities
 
     func isAccessible() -> Bool {
         guard let url = try? resolveBookmark() else { return false }
@@ -85,12 +137,15 @@ class SyncFolderManager {
     }
 }
 
+// MARK: - Errors
+
 enum SyncError: LocalizedError {
     case noBookmark
     case staleBookmark
     case accessDenied
     case manifestNotFound
     case fileNotFound(String)
+    case downloadTimeout(String)
 
     var errorDescription: String? {
         switch self {
@@ -99,6 +154,7 @@ enum SyncError: LocalizedError {
         case .accessDenied: return "Cannot access sync folder"
         case .manifestNotFound: return "No manifest.json found in sync folder"
         case .fileNotFound(let path): return "File not found: \(path)"
+        case .downloadTimeout(let name): return "Download timed out for \(name). Check your network connection."
         }
     }
 }

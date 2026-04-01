@@ -3,131 +3,135 @@ import UniformTypeIdentifiers
 
 struct OnboardingView: View {
     @State private var currentStep = 0
-    @State private var folderSelected = false
-    @State private var fileCount: Int?
     @State private var showError = false
     @State private var errorMessage = ""
-    @State private var showingPicker = false
+    @State private var isDownloading = false
+    @State private var downloadProgress: (current: Int, total: Int) = (0, 0)
 
     let folderManager: SyncFolderManager
     let onComplete: (SyncManifest) -> Void
 
     @State private var pickerCoordinator: FolderPickerCoordinator?
-    @State private var manifest: SyncManifest?
 
     var body: some View {
-        TabView(selection: $currentStep) {
-            // Step 1: Welcome
-            VStack(spacing: 24) {
-                Spacer()
-                Image(systemName: "doc.text.magnifyingglass")
-                    .font(.system(size: 64))
-                    .foregroundStyle(Color.amber)
-                Text("MarkScout for iOS")
-                    .font(.system(.title, design: .monospaced))
-                    .fontWeight(.bold)
-                    .foregroundStyle(.white)
-                Text("A companion for your desktop\nmarkdown browser")
-                    .multilineTextAlignment(.center)
-                    .foregroundStyle(.secondary)
-                    .font(.body)
-                Spacer()
-                amberButton("Next") { currentStep = 1 }
-                    .padding(.bottom, 48)
-            }
-            .tag(0)
-
-            // Step 2: Enable Sync
-            VStack(spacing: 24) {
-                Spacer()
-                Image(systemName: "arrow.triangle.2.circlepath")
-                    .font(.system(size: 64))
-                    .foregroundStyle(Color.amber)
-                Text("Enable Sync on Your Mac")
-                    .font(.system(.title2, design: .monospaced))
-                    .fontWeight(.bold)
-                    .foregroundStyle(.white)
-                VStack(alignment: .leading, spacing: 12) {
-                    stepRow(1, "Open MarkScout on your Mac")
-                    stepRow(2, "Go to Preferences")
-                    stepRow(3, "Enable iCloud Sync")
+        VStack(spacing: 0) {
+            if isDownloading {
+                downloadingView
+            } else {
+                TabView(selection: $currentStep) {
+                    welcomeStep.tag(0)
+                    selectFolderStep.tag(1)
                 }
+                .tabViewStyle(.page(indexDisplayMode: .always))
+            }
+        }
+        .background(Color.msBackground)
+    }
+
+    // MARK: - Step 1: Welcome
+
+    private var welcomeStep: some View {
+        VStack(spacing: 24) {
+            Spacer()
+            Image(systemName: "doc.text.magnifyingglass")
+                .font(.system(size: 64))
+                .foregroundStyle(Color.amber)
+            Text("MarkScout for iOS")
+                .font(.system(.title, design: .monospaced))
+                .fontWeight(.bold)
+                .foregroundStyle(.white)
+            Text("A companion for your desktop\nmarkdown browser")
+                .multilineTextAlignment(.center)
+                .foregroundStyle(.secondary)
+                .font(.body)
+            Spacer()
+            amberButton("Get Started") { currentStep = 1 }
+                .padding(.bottom, 48)
+        }
+    }
+
+    // MARK: - Step 2: Select Folder
+
+    private var selectFolderStep: some View {
+        VStack(spacing: 24) {
+            Spacer()
+            Image(systemName: "folder.badge.plus")
+                .font(.system(size: 64))
+                .foregroundStyle(Color.amber)
+            Text("Select MarkScout Folder")
+                .font(.system(.title2, design: .monospaced))
+                .fontWeight(.bold)
+                .foregroundStyle(.white)
+            Text("Open iCloud Drive and pick the\nMarkScout sync folder")
+                .multilineTextAlignment(.center)
+                .foregroundStyle(.secondary)
                 .padding(.horizontal, 32)
-                Spacer()
-                amberButton("Next") { currentStep = 2 }
-                    .padding(.bottom, 48)
-            }
-            .tag(1)
 
-            // Step 3: Select Folder
-            VStack(spacing: 24) {
-                Spacer()
-                Image(systemName: "folder.badge.plus")
-                    .font(.system(size: 64))
-                    .foregroundStyle(Color.amber)
-                Text("Select Your Sync Folder")
-                    .font(.system(.title2, design: .monospaced))
-                    .fontWeight(.bold)
-                    .foregroundStyle(.white)
-                Text("Navigate to iCloud Drive and select the MarkScout folder")
-                    .multilineTextAlignment(.center)
-                    .foregroundStyle(.secondary)
+            if showError {
+                Text(errorMessage)
+                    .foregroundStyle(.red)
+                    .font(.callout)
                     .padding(.horizontal, 32)
+                    .multilineTextAlignment(.center)
+            }
 
-                if showError {
-                    Text(errorMessage)
-                        .foregroundStyle(.red)
-                        .font(.callout)
-                        .padding(.horizontal, 32)
-                }
+            Spacer()
+            amberButton("Choose Folder") {
+                presentFolderPicker()
+            }
 
-                Spacer()
-                amberButton("Select Folder") {
-                    presentFolderPicker()
-                }
+            #if targetEnvironment(simulator)
+            Button {
+                loadDemoData()
+            } label: {
+                Text("Use Demo Data")
+                    .font(.system(.callout, design: .monospaced))
+                    .foregroundStyle(Color.msMuted)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 12)
+            }
+            .padding(.horizontal, 32)
+            #endif
 
-                Button {
-                    loadDemoData()
-                } label: {
-                    Text("Use Demo Data (Simulator)")
+            Spacer().frame(height: 48)
+        }
+    }
+
+    // MARK: - Downloading State
+
+    private var downloadingView: some View {
+        VStack(spacing: 24) {
+            Spacer()
+            Image(systemName: "arrow.down.circle")
+                .font(.system(size: 64))
+                .foregroundStyle(Color.amber)
+                .symbolEffect(.pulse, isActive: true)
+            Text("Downloading Files")
+                .font(.system(.title2, design: .monospaced))
+                .fontWeight(.bold)
+                .foregroundStyle(.white)
+
+            if downloadProgress.total > 0 {
+                VStack(spacing: 8) {
+                    ProgressView(value: Double(downloadProgress.current), total: Double(downloadProgress.total))
+                        .tint(Color.amber)
+                        .padding(.horizontal, 48)
+                    Text("\(downloadProgress.current) of \(downloadProgress.total) files")
                         .font(.system(.callout, design: .monospaced))
                         .foregroundStyle(Color.msMuted)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 12)
                 }
-                .padding(.horizontal, 32)
-                .padding(.bottom, 48)
+            } else {
+                ProgressView()
+                    .tint(Color.amber)
+                Text("Reading manifest...")
+                    .font(.system(.callout, design: .monospaced))
+                    .foregroundStyle(Color.msMuted)
             }
-            .tag(2)
-
-            // Step 4: Complete
-            VStack(spacing: 24) {
-                Spacer()
-                Image(systemName: "checkmark.circle.fill")
-                    .font(.system(size: 64))
-                    .foregroundStyle(.green)
-                Text("You're Set!")
-                    .font(.system(.title, design: .monospaced))
-                    .fontWeight(.bold)
-                    .foregroundStyle(.white)
-                if let count = fileCount {
-                    Text("Found \(count) files")
-                        .foregroundStyle(.secondary)
-                        .font(.title3)
-                }
-                Spacer()
-                amberButton("Open MarkScout") {
-                    if let m = manifest {
-                        onComplete(m)
-                    }
-                }
-                .padding(.bottom, 48)
-            }
-            .tag(3)
+            Spacer()
         }
-        .tabViewStyle(.page(indexDisplayMode: .always))
-        .background(Color(hex: "#0d0d0d"))
     }
+
+    // MARK: - Actions
 
     private func loadDemoData() {
         let demo = DemoDataManager.shared
@@ -146,19 +150,58 @@ struct OnboardingView: View {
         }
     }
 
-    private func stepRow(_ number: Int, _ text: String) -> some View {
-        HStack(spacing: 12) {
-            Text("\(number)")
-                .font(.system(.callout, design: .monospaced))
-                .fontWeight(.bold)
-                .foregroundStyle(.black)
-                .frame(width: 28, height: 28)
-                .background(Color.amber)
-                .clipShape(Circle())
-            Text(text)
-                .foregroundStyle(.white)
+    private func presentFolderPicker() {
+        showError = false
+        let picker = UIDocumentPickerViewController(forOpeningContentTypes: [.folder])
+        picker.allowsMultipleSelection = false
+
+        let coordinator = FolderPickerCoordinator(folderManager: folderManager) { result in
+            switch result {
+            case .success(let pickerResult):
+                startDownloading(manifest: pickerResult.manifest)
+            case .failure(let error):
+                if case SyncError.noBookmark = error {
+                    // User cancelled
+                } else if case SyncError.downloadTimeout = error {
+                    errorMessage = "Couldn't download manifest.json. Make sure you have an internet connection and the MarkScout folder contains synced files."
+                    showError = true
+                } else {
+                    errorMessage = "No manifest.json found in that folder. Make sure you selected the MarkScout sync folder."
+                    showError = true
+                }
+            }
+        }
+        picker.delegate = coordinator
+        self.pickerCoordinator = coordinator
+
+        if let scene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+           let root = scene.windows.first?.rootViewController {
+            root.present(picker, animated: true)
         }
     }
+
+    private func startDownloading(manifest: SyncManifest) {
+        isDownloading = true
+        downloadProgress = (0, manifest.fileCount)
+
+        Task {
+            let downloaded = await folderManager.downloadAllFiles(manifest: manifest) { current, total in
+                downloadProgress = (current, total)
+            }
+
+            await MainActor.run {
+                if downloaded > 0 {
+                    onComplete(manifest)
+                } else {
+                    isDownloading = false
+                    errorMessage = "Couldn't download files. Check your internet connection and try again."
+                    showError = true
+                }
+            }
+        }
+    }
+
+    // MARK: - Helpers
 
     private func amberButton(_ title: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
@@ -172,36 +215,6 @@ struct OnboardingView: View {
                 .clipShape(RoundedRectangle(cornerRadius: 12))
         }
         .padding(.horizontal, 32)
-    }
-
-    private func presentFolderPicker() {
-        showError = false
-        let picker = UIDocumentPickerViewController(forOpeningContentTypes: [.folder])
-        picker.allowsMultipleSelection = false
-
-        let coordinator = FolderPickerCoordinator(folderManager: folderManager) { result in
-            switch result {
-            case .success(let pickerResult):
-                manifest = pickerResult.manifest
-                fileCount = pickerResult.manifest.fileCount
-                folderSelected = true
-                currentStep = 3
-            case .failure(let error):
-                if case SyncError.noBookmark = error {
-                    // User cancelled — do nothing
-                } else {
-                    errorMessage = "No manifest.json found. Make sure sync is enabled on your Mac."
-                    showError = true
-                }
-            }
-        }
-        picker.delegate = coordinator
-        self.pickerCoordinator = coordinator // retain
-
-        if let scene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
-           let root = scene.windows.first?.rootViewController {
-            root.present(picker, animated: true)
-        }
     }
 }
 

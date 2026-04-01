@@ -8,6 +8,8 @@ struct SettingsView: View {
     @State private var showClearConfirm = false
     @State private var showFolderPicker = false
     @State private var pickerCoordinator: FolderPickerCoordinator?
+    @State private var isDownloadingAll = false
+    @State private var downloadProgress: (current: Int, total: Int) = (0, 0)
 
     var body: some View {
         List {
@@ -28,8 +30,78 @@ struct SettingsView: View {
                 }
                 .foregroundStyle(Color.amber)
                 .listRowBackground(Color.msSurface)
+
+                if isDownloadingAll {
+                    HStack {
+                        Label("Downloading...", systemImage: "arrow.down.circle")
+                            .foregroundStyle(Color.msText)
+                        Spacer()
+                        if downloadProgress.total > 0 {
+                            Text("\(downloadProgress.current)/\(downloadProgress.total)")
+                                .font(.caption)
+                                .foregroundStyle(Color.msMuted)
+                        }
+                    }
+                    .listRowBackground(Color.msSurface)
+                    ProgressView(value: Double(downloadProgress.current), total: max(1, Double(downloadProgress.total)))
+                        .tint(Color.amber)
+                        .listRowBackground(Color.msSurface)
+                } else {
+                    Button {
+                        downloadAllFiles()
+                    } label: {
+                        Label("Download All Files", systemImage: "arrow.down.circle")
+                    }
+                    .foregroundStyle(Color.amber)
+                    .listRowBackground(Color.msSurface)
+                }
+
+                if let manifest = appState.manifest {
+                    HStack {
+                        Label("Files", systemImage: "doc.text")
+                            .foregroundStyle(Color.msText)
+                        Spacer()
+                        Text("\(manifest.fileCount) files")
+                            .font(.caption)
+                            .foregroundStyle(Color.msMuted)
+                    }
+                    .listRowBackground(Color.msSurface)
+                }
             } header: {
                 Text("Sync")
+                    .foregroundStyle(Color.msMuted)
+            }
+
+            // Filters
+            Section {
+                HStack {
+                    Label("File Count", systemImage: "line.3.horizontal.decrease.circle")
+                        .foregroundStyle(Color.msText)
+                    Spacer()
+                    Text("\(appState.filteredFiles.count) shown")
+                        .font(.caption)
+                        .foregroundStyle(Color.msMuted)
+                }
+                .listRowBackground(Color.msSurface)
+
+                if let manifest = appState.manifest {
+                    let projects = Set(manifest.files.map(\.project)).sorted()
+                    ForEach(projects, id: \.self) { project in
+                        let count = manifest.files.filter { $0.project == project }.count
+                        HStack {
+                            Text(project)
+                                .font(.system(.body, design: .monospaced))
+                                .foregroundStyle(Color.msText)
+                            Spacer()
+                            Text("\(count) files")
+                                .font(.caption)
+                                .foregroundStyle(Color.msMuted)
+                        }
+                        .listRowBackground(Color.msSurface)
+                    }
+                }
+            } header: {
+                Text("Filters")
                     .foregroundStyle(Color.msMuted)
             }
 
@@ -113,6 +185,28 @@ struct SettingsView: View {
             }
         } message: {
             Text("This will remove all cached files. They will be re-downloaded when you refresh.")
+        }
+    }
+
+    private func downloadAllFiles() {
+        guard let manifest = appState.manifest else { return }
+        isDownloadingAll = true
+        downloadProgress = (0, manifest.fileCount)
+        Task {
+            let downloaded = await folderManager.downloadAllFiles(manifest: manifest) { current, total in
+                downloadProgress = (current, total)
+            }
+            await MainActor.run {
+                isDownloadingAll = false
+                if downloaded > 0 {
+                    appState.cacheStatus = .cached
+                }
+            }
+            // Also update the local cache
+            await cacheManager.cacheAllFiles(manifest: manifest, folderManager: folderManager)
+            await MainActor.run {
+                appState.cacheStatus = .cached
+            }
         }
     }
 
