@@ -161,12 +161,9 @@ struct OnboardingView: View {
                 startDownloading(manifest: pickerResult.manifest)
             case .failure(let error):
                 if case SyncError.noBookmark = error {
-                    // User cancelled
-                } else if case SyncError.downloadTimeout = error {
-                    errorMessage = "Couldn't download manifest.json. Make sure you have an internet connection and the MarkScout folder contains synced files."
-                    showError = true
+                    // User cancelled — do nothing
                 } else {
-                    errorMessage = "No manifest.json found in that folder. Make sure you selected the MarkScout sync folder."
+                    errorMessage = error.localizedDescription
                     showError = true
                 }
             }

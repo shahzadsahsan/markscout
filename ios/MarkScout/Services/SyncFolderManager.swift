@@ -36,6 +36,24 @@ class SyncFolderManager {
         defer { folderURL.stopAccessingSecurityScopedResource() }
 
         let manifestURL = folderURL.appendingPathComponent("manifest.json")
+
+        // Check if the file exists at all (even as an iCloud placeholder)
+        let exists = FileManager.default.fileExists(atPath: manifestURL.path)
+        if !exists {
+            // Check if there's an .icloud placeholder
+            let icloudName = ".\(manifestURL.lastPathComponent).icloud"
+            let icloudURL = manifestURL.deletingLastPathComponent().appendingPathComponent(icloudName)
+            let placeholderExists = FileManager.default.fileExists(atPath: icloudURL.path)
+
+            if !placeholderExists {
+                // List what IS in the folder to help debug
+                let contents = (try? FileManager.default.contentsOfDirectory(atPath: folderURL.path)) ?? []
+                throw SyncError.manifestNotFoundDetail(
+                    "manifest.json not found in selected folder. Folder contains: \(contents.isEmpty ? "nothing" : contents.joined(separator: ", "))"
+                )
+            }
+        }
+
         try await ensureDownloaded(manifestURL, timeout: 60)
         let data = try Data(contentsOf: manifestURL)
         return try JSONDecoder().decode(SyncManifest.self, from: data)
@@ -144,6 +162,7 @@ enum SyncError: LocalizedError {
     case staleBookmark
     case accessDenied
     case manifestNotFound
+    case manifestNotFoundDetail(String)
     case fileNotFound(String)
     case downloadTimeout(String)
 
@@ -153,6 +172,7 @@ enum SyncError: LocalizedError {
         case .staleBookmark: return "Sync folder access expired. Please re-select the folder."
         case .accessDenied: return "Cannot access sync folder"
         case .manifestNotFound: return "No manifest.json found in sync folder"
+        case .manifestNotFoundDetail(let detail): return detail
         case .fileNotFound(let path): return "File not found: \(path)"
         case .downloadTimeout(let name): return "Download timed out for \(name). Check your network connection."
         }
