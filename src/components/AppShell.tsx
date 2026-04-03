@@ -628,14 +628,17 @@ export default function AppShell() {
 
     setFiles(prev => {
       const pathSet = new Set(prev.filter(Boolean).map(f => f.path));
-      const newFiles = pending.filter(f => f && !pathSet.has(f.path));
+      const genuinelyNew = pending.filter(f => f && !pathSet.has(f.path));
       const updated = prev.filter(Boolean).map(f => {
         const newer = pending.find(p => p?.path === f.path);
         return newer || f;
       });
-      return [...newFiles, ...updated].sort((a, b) => b.modifiedAt - a.modifiedAt);
+      // Update total count by the number of files that were genuinely new
+      if (genuinelyNew.length > 0) {
+        setTotalFiles(t => t + genuinelyNew.length);
+      }
+      return [...genuinelyNew, ...updated].sort((a, b) => b.modifiedAt - a.modifiedAt);
     });
-    setTotalFiles(prev => prev + pendingFilesRef.current.length);
   }, []);
 
   // --- Tauri event listener (replaces SSE EventSource) ---

@@ -558,13 +558,31 @@ fn start_notify_watcher_blocking(
     let registry_clone = registry.clone();
     let app_clone = app_handle.clone();
 
+    // Use a channel so the notify callback returns instantly (never blocks).
+    // Heavy work (hashing, IO) happens on a dedicated processing thread.
+    let (tx, rx) = std::sync::mpsc::channel::<Vec<DebouncedEvent>>();
+
+    // Processing thread — drains the channel and does all the IO-heavy work
+    let proc_registry = registry_clone.clone();
+    let proc_app = app_clone.clone();
+    std::thread::Builder::new()
+        .name("markscout-event-proc".into())
+        .spawn(move || {
+            while let Ok(events) = rx.recv() {
+                handle_debounced_events(&events, &proc_registry, &proc_app);
+            }
+        })?;
+
     let mut debouncer = new_debouncer(
-        std::time::Duration::from_millis(100),
+        std::time::Duration::from_millis(300),
         None,
         move |result: DebounceEventResult| {
             match result {
                 Ok(events) => {
-                    handle_debounced_events(&events, &registry_clone, &app_clone);
+                    // Non-blocking: just send events to the processing thread.
+                    // If the channel is full/disconnected, events are lost but
+                    // the periodic rescan will catch up.
+                    let _ = tx.send(events);
                 }
                 Err(errors) => {
                     for e in errors {
@@ -595,12 +613,15 @@ fn start_notify_watcher_blocking(
     let rescan_registry = registry.clone();
     let rescan_app = app_handle.clone();
     let rescan_dirs = watch_dirs.clone();
-    std::thread::spawn(move || {
-        loop {
-            std::thread::sleep(std::time::Duration::from_secs(30));
-            periodic_rescan(&rescan_registry, &rescan_app, &rescan_dirs);
-        }
-    });
+    std::thread::Builder::new()
+        .name("markscout-rescan".into())
+        .spawn(move || {
+            loop {
+                std::thread::sleep(std::time::Duration::from_secs(10));
+                periodic_rescan(&rescan_registry, &rescan_app, &rescan_dirs);
+            }
+        })
+        .ok();
 
     // Park this thread forever so the debouncer stays alive
     loop {
@@ -846,18 +867,23 @@ fn handle_debounced_events(
                         registry.insert(path_str.clone(), entry.clone());
                         sync_events.push((event_type.into(), path_str.clone()));
 
-                        // Live move tracking for new files
+                        // Live move tracking for new files — fire and forget on
+                        // a separate thread so we don't block event processing
                         if is_new {
-                            let state_mgr: tauri::State<'_, AppStateManager> = app_handle.state();
+                            let app_ref = app_handle.clone();
                             let hash = entry.content_hash.clone();
                             let p = path_str.clone();
                             let reg_ref = registry.clone();
-                            let _ = run_async(async {
-                                state_mgr
-                                    .check_live_move(&p, &hash, |check_path| {
-                                        reg_ref.contains_key(check_path)
-                                    })
-                                    .await
+                            std::thread::spawn(move || {
+                                run_async(async {
+                                    let state_mgr: tauri::State<'_, AppStateManager> =
+                                        app_ref.state();
+                                    let _ = state_mgr
+                                        .check_live_move(&p, &hash, |check_path| {
+                                            reg_ref.contains_key(check_path)
+                                        })
+                                        .await;
+                                });
                             });
                         }
 
