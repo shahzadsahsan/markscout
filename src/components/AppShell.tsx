@@ -870,7 +870,16 @@ export default function AppShell() {
           }
           break;
         }
-        // Plain ArrowUp/ArrowDown: let browser scroll the document naturally
+        // Plain ArrowUp/ArrowDown: scroll the document content area
+        case 'ArrowDown':
+        case 'ArrowUp': {
+          const main = mainRef.current;
+          if (main) {
+            const amount = e.key === 'ArrowDown' ? 80 : -80;
+            main.scrollBy({ top: amount, behavior: 'auto' });
+          }
+          break;
+        }
       }
     }
 
